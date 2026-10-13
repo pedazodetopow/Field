@@ -13,6 +13,9 @@ import {
 type Route = "inicio" | "finanzas" | "alimentacion" | "ajustes";
 const routes: Route[] = ["inicio", "finanzas", "alimentacion", "ajustes"];
 const app = window.document.querySelector<HTMLDivElement>("#app")!;
+// Conservar la referencia: WebKit puede dejar de notificar cambios si la
+// MediaQueryList que tiene el listener queda sin referencias en JavaScript.
+const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
 let space: Space = "personal";
 let repository: Repository;
 let stateDoc: Document;
@@ -73,7 +76,7 @@ function applyTheme() {
   const theme = stateDoc.data.settings.theme;
   const dark =
     theme === "dark" ||
-    (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+    (theme === "system" && systemTheme.matches);
   window.document.documentElement.dataset.theme = dark ? "dark" : "light";
   window.document
     .querySelector('meta[name="theme-color"]')
@@ -348,7 +351,7 @@ window.addEventListener("hashchange", () => {
     window.scrollTo(0, 0);
   });
 });
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+systemTheme.addEventListener("change", () => {
   if (stateDoc) applyTheme();
 });
 
