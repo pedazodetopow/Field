@@ -30,9 +30,9 @@ El build está preparado para el repositorio `pedazodetopow/Field`, con base `/F
 2. En el repositorio, abrí **Settings → Pages → Build and deployment → Source** y elegí **GitHub Actions**. Actions debe estar habilitado.
 3. El workflow [pages.yml](.github/workflows/pages.yml) ejecuta instalación con lockfile, pruebas, typecheck, build y pruebas de navegador. Publica solamente cuando pasa la validación; los pull requests validan sin desplegar.
 4. Si activaste Pages después de subir el código, ejecutá **Actions → Validar y publicar Field → Run workflow** en `main`.
-5. Usá la URL que devuelve el job **Publicar**. Para este repositorio se espera `https://pedazodetopow.github.io/Field/`, pero no se debe considerar activa hasta que el despliegue termine.
+5. Usá la URL que devuelve el job **Publicar**. No se considera publicada hasta que el despliegue termine y la URL devuelta responda correctamente.
 
-En el iPhone, abrí esa URL HTTPS en Safari. En esta entrega no se realizó un push ni una publicación remota: el workflow y el build están preparados y comprobados localmente. No se pudo consultar el estado de Pages desde el entorno por un acceso HTTP prohibido a la API de GitHub.
+En el iPhone, abrí esa URL HTTPS en Safari. El código y el workflow ya se incorporaron a `main` mediante un push de avance directo, sin forzar el historial. La publicación remota todavía no se pudo comprobar: el entorno bloquea la API y el dominio de Pages. Ver [estado de publicación y acción manual pendiente](docs/PUBLICACION.md).
 
 Si cambiás el nombre del repositorio o publicás bajo otro path, ajustá `base` en `vite.config.ts`. Mantener el mismo origen público conserva el acceso a los datos locales; cambiar de dominio requiere trasladarlos con un respaldo.
 

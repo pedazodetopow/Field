@@ -47,7 +47,7 @@ Las pruebas unitarias usan fake-indexeddb para errores y concurrencia controlado
 - La caché npm predeterminada de este entorno no era escribible. Se usó `/tmp/field-npm-cache`; no se cambió HOME ni se desactivó verificación de paquetes.
 - La primera comprobación TypeScript detectó una colisión entre el nombre del documento persistido y el DOM, y una comprobación de API incorrecta. Se corrigieron antes del build final.
 - La descarga de Chromium de Playwright devolvió HTTP 403 `Domain forbidden` en `cdn.playwright.dev`. Se utilizó Chromium ya instalado, manteniendo verificación y sin descargar artefactos de terceros.
-- La descarga de WebKit también se intentó de forma independiente; sigue bloqueada por la política de red. Para ejecutar esa parte, habilitar `cdn.playwright.dev` y `playwright.download.prss.microsoft.com` en la configuración del entorno y volver a instalar WebKit. No presentar Chromium móvil como Safari ni como una prueba real de iPhone.
+- En el intento inicial la descarga de WebKit fue bloqueada. En el intento de publicación se descargó WebKit 27.2, pero faltan GTK4, Graphene, HarfBuzz ICU, Manette, Hyphen y GLES. El instalador oficial requiere privilegios que este entorno no dispone; no se solicitaron contraseñas. Los cinco casos de WebKit fallaron en el lanzamiento, antes de ejecutar sus verificaciones. GitHub Actions instala las dependencias oficiales en Ubuntu con `playwright install --with-deps`. No presentar Chromium móvil como Safari ni como una prueba real de iPhone.
 - La consulta de solo lectura del estado de Pages mediante `gh api` fue prohibida. El acceso de lectura Git a `origin` sí funciona; eso no prueba acceso a la API ni configuración de Pages. No se solicitó ni inventó un token.
 
 ## Límites y siguiente etapa
