@@ -1,3 +1,15 @@
+# Publicación financiera confirmada — 13 de octubre de 2026
+
+La reconstrucción de Inicio y Finanzas está desplegada en **https://pedazodetopow.github.io/Field/**. No queda ningún paso manual para activarla.
+
+- Código publicado: `e632020112c038d8509a40183213e76fe6256d70`, incorporado a main mediante avance normal, sin force-push.
+- [GitHub Actions 38458463754](https://github.com/pedazodetopow/Field/actions/runs/38458463754): validate y deploy en success; 53 pruebas unitarias y 57 de navegador (incluido WebKit) pasaron. El mismo workflow produce 32 capturas y conserva el artefacto `capturas-finanzas` durante 14 días.
+- HTTPS verificado: HTTP 200, certificado validado, HTML y todos sus recursos iguales por SHA-256 al build probado (`index-BoYVPSpk.js`, `index-D28hVr5_.css`, favicon).
+- Datos anteriores: migración 2→3 con copia previa. Cocina conserva sus datos y funcionamiento. Si ya existía una demo anterior, **Cargar demo completa** agrega los ejemplos financieros nuevos únicamente a esa base ficticia, con confirmación y copia previa.
+- Reglas de diseño, compatibilidad de skills y referencia: SKILLS.md. Resultados completos: VALIDACION.md. Los commits posteriores que solo registran esta verificación no cambian el build desplegado.
+
+El contenido siguiente es el historial de publicaciones anteriores.
+
 # Publicación de Field
 
 ## Rediseño funcional

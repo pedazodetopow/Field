@@ -11,7 +11,9 @@
 - Problemas corregidos: el formulario rápido quedaba después del recibo en móvil (ahora va inmediatamente después del disponible de hoy); etiquetas largas y campos de fecha desbordaban el formulario fijo de iPhone emulado (ahora una columna); pruebas de deshacer aguardaban una operación asíncrona de forma insuficiente (ahora verifican confirmación antes de recargar).
 - Evidencia local: `/workspace/artifacts/field-finanzas/`; comando reproducible y artefacto de Actions `capturas-finanzas`. La suite detecta overlays de Vite, contenido vacío, errores de consola y overflow de diálogos.
 - El plugin Browser no está disponible. Se aplicó el fallback oficial de `frontend-testing-debugging`: Playwright existente; no se instaló otro navegador ni se desactivó el sandbox. Procedencia y compatibilidad de skills en SKILLS.md.
-- Límite: no hay prueba en iPhone físico. WebKit se verifica en Actions con sus dependencias oficiales antes de desplegar. La publicación de esta entrega se registra debajo cuando finalicen CI y deploy.
+- GitHub Actions: **53 pruebas unitarias y 57 pruebas de navegador pasaron**, sin fallos ni omitidas (Chromium móvil/escritorio y WebKit móvil). Capturas generadas y artefacto `capturas-finanzas` disponible. [Ejecución 38458463754](https://github.com/pedazodetopow/Field/actions/runs/38458463754), código `e632020112c038d8509a40183213e76fe6256d70`.
+- `validate` y `deploy`: **success**. Publicación verificada en `https://pedazodetopow.github.io/Field/`: HTTP 200 y TLS válido; HTML, favicon, JS `index-BoYVPSpk.js` y CSS `index-D28hVr5_.css` coinciden por SHA-256 con el build local probado. Ninguna acción manual pendiente en GitHub.
+- Límite: no hay prueba en iPhone físico. Los flujos se verificaron contra el build en navegador local y Actions; la comprobación pública fue HTTPS y coincidencia exacta de recursos, no una sesión interactiva pública desde el Chromium del entorno Cloud.
 
 
 ## Rediseño funcional — 13 de octubre de 2026
