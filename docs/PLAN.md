@@ -1,6 +1,6 @@
-# Sistema Personal: análisis y plan del MVP
+# Sistema Personal: análisis y plan inicial (histórico)
 
-Estado: arquitectura aprobada. Etapa 1 implementada y validada localmente; publicación remota y WebKit pendientes (ver VALIDACION.md). No avanzar a la etapa siguiente sin nueva autorización. Finanzas y alimentación son prioritarias; actividad y hábitos quedan para después.
+Estado actual: el pedido de rediseño integral autorizó la implementación funcional de finanzas y cocina y reemplaza el límite anterior de etapa 1. Lo entregado se describe en VERSION_FUNCIONAL.md; resultados en VALIDACION.md. El contenido siguiente conserva el análisis y las decisiones del plan original, como historial, y no limita el alcance autorizado actual.
 
 ## 1. Repositorio actual
 

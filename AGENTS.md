@@ -3,9 +3,11 @@
 ## Alcance y forma de trabajo
 
 - Producto: herramienta personal para Uruguay, en español rioplatense, con finanzas, alimentación, actividad y hábitos.
-- Arquitectura aprobada; implementar únicamente la etapa 1 de `docs/PLAN.md`: base, navegación, tema, persistencia, respaldos y preparación del despliegue inicial. Detenerse al terminar y presentar resultados. No avanzar a otra etapa sin nueva autorización.
+- Alcance vigente autorizado: rediseño integral y primera versión funcional de finanzas y cocina/meal prep, incluidos ingresos, ahorro, semanas, compras vinculadas, recetas y preparaciones. Implementar, probar y publicar en main sin pedir otra aprobación para comenzar. La instrucción actual del usuario reemplaza el límite anterior de etapa 1.
+- Evitar pantallas de próximamente, frases promocionales y navegación sin funciones. Hábitos y ejercicio siguen en la visión, con navegación oculta hasta implementarlos.
+- No borrar datos existentes. Migrar el esquema publicado y conservar copias previas; mantener importación/exportación y demo en una base físicamente separada.
 - Priorizar una versión pequeña y utilizable. Finanzas y alimentación son prioritarias; actividad y hábitos pueden llegar después.
-- Preparar GitHub Pages desde la primera etapa y documentar acceso por navegador e iPhone. Ejecutar pruebas y registrar resultados en `docs/VALIDACION.md` al cerrar cada etapa.
+- Conservar GitHub Pages y la base /Field/ y documentar acceso por navegador e iPhone. Ejecutar pruebas y registrar resultados en `docs/VALIDACION.md` al cerrar cada etapa.
 - Implementar solo el alcance aprobado. Las funcionalidades futuras no son requisitos del MVP.
 - Usar el checkout existente: las tareas en la nube ya están aisladas. No crear worktrees salvo pedido explícito.
 - Inspeccionar y preservar cambios existentes. No incluir información personal, credenciales ni respaldos reales en el repositorio, fixtures, capturas o logs.

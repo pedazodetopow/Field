@@ -1,4 +1,10 @@
-# Publicación inicial de Field
+# Publicación de Field
+
+## Rediseño funcional
+
+La versión funcional conserva el mismo sitio, la base `/Field/` y el workflow de Pages. Incluye Inicio operativo, Finanzas y Cocina (ingredientes, recetas, compras y preparaciones), con migración del esquema publicado. La incorporación a main activa validación completa (38 pruebas unitarias y 33 flujos Playwright de los tres proyectos) y solo publica si todos los checks pasan. La ejecución y el commit desplegado se consultan en [Actions](https://github.com/pedazodetopow/Field/actions/workflows/pages.yml). El resultado remoto de la entrega se documenta al comprobar el sitio.
+
+## Historial: primera publicación
 
 ## Estado comprobado
 

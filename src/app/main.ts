@@ -8,369 +8,565 @@ import {
   type Document,
   type Space,
   type Theme,
+  type Recipe,
 } from "../storage/model";
-
-type Route = "inicio" | "finanzas" | "alimentacion" | "ajustes";
-const routes: Route[] = ["inicio", "finanzas", "alimentacion", "ajustes"];
-const app = window.document.querySelector<HTMLDivElement>("#app")!;
-// Conservar la referencia: WebKit puede dejar de notificar cambios si la
-// MediaQueryList que tiene el listener queda sin referencias en JavaScript.
-const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
-let space: Space = "personal";
-let repository: Repository;
-let stateDoc: Document;
-let busy = false;
-let pending: Data | null = null;
-let pendingReason = "";
-let notice = "";
-let noticeError = false;
-
-const icons = {
-  inicio:
-    '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/>',
-  finanzas:
-    '<rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18m-6 5h3M6 5V3h12"/>',
-  alimentacion:
-    '<path d="M4 3v7a3 3 0 0 0 6 0V3M7 3v18m13-18c-4 2-5 7-5 10h5m0-10v18"/>',
-  ajustes:
-    '<path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3"/><circle cx="16" cy="17" r="3"/>',
-  arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>',
-  shield:
-    '<path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z"/><path d="m8 12 3 3 5-6"/>',
-  download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',
-  leaf: '<path d="M20 3C8 3 3 7 4 14c1 6 8 7 12 2 3-4 4-9 4-13ZM4 21 16 8"/>',
+import { createDemo } from "../demo/data";
+import { activePeriod, periodMovements } from "../modules/finance/logic";
+import { financeView, movementRows } from "../modules/finance/view";
+import { kitchenView, type KitchenTab } from "../modules/food/view";
+import { recipeCost } from "../modules/food/logic";
+import { today, esc, money, parseMoney, type Unit } from "../shared/values";
+import { icon, button, input, select, unitOptions } from "../shared/ui";
+import {
+  formSpec,
+  deleteEntity,
+  lineRow,
+  type EditorKind,
+  type FormSpec,
+} from "./forms";
+import { homeView } from "./home";
+const app = document.querySelector<HTMLDivElement>("#app")!;
+const editor = document.createElement("dialog");
+editor.className = "editor";
+document.body.append(editor);
+const notification = document.createElement("div");
+notification.className = "notice";
+notification.setAttribute("role", "status");
+notification.hidden = true;
+document.body.append(notification);
+const systemTheme = matchMedia("(prefers-color-scheme: dark)");
+let space: Space = "personal",
+  repository: Repository,
+  state: Document,
+  busy = false;
+let editing: EditorKind | undefined,
+  editingSpec: FormSpec | undefined,
+  followup: (() => void) | undefined;
+const route = () => {
+  const head = location.hash.slice(1).split("/")[0];
+  return head === "finanzas"
+    ? "finanzas"
+    : head === "cocina" || head === "alimentacion"
+      ? "cocina"
+      : head === "ajustes"
+        ? "ajustes"
+        : "inicio";
 };
-function icon(name: keyof typeof icons) {
-  return `<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[name]}</svg>`;
-}
-function escape(text: string): string {
-  return text.replace(
-    /[&<>"']/g,
-    (char) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        char
-      ]!,
-  );
-}
-function route(): Route {
-  const value = location.hash.slice(1);
-  return routes.includes(value as Route) ? (value as Route) : "inicio";
-}
-function label(value: Route) {
-  return {
-    inicio: "Inicio",
-    finanzas: "Finanzas",
-    alimentacion: "Alimentación",
-    ajustes: "Ajustes y respaldos",
-  }[value];
-}
-function localDate(value: string) {
-  return new Intl.DateTimeFormat("es-UY", {
-    timeZone: "America/Montevideo",
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
+const kitchenTab = (): KitchenTab => {
+  const tab = location.hash.split("/")[1];
+  return ["recetas", "ingredientes", "compras", "preparaciones"].includes(tab)
+    ? (tab as KitchenTab)
+    : "recetas";
+};
 function applyTheme() {
-  const theme = stateDoc.data.settings.theme;
   const dark =
-    theme === "dark" ||
-    (theme === "system" && systemTheme.matches);
-  window.document.documentElement.dataset.theme = dark ? "dark" : "light";
-  window.document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", dark ? "#171e1b" : "#f5f5ef");
+    state.data.settings.theme === "dark" ||
+    (state.data.settings.theme === "system" && systemTheme.matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  document
+    .querySelector('meta[name="theme-color"]')!
+    .setAttribute("content", dark ? "#121b23" : "#f4f6f8");
 }
-
-function home() {
-  const name = stateDoc.data.profile.displayName;
-  return `<section class="hero"><div class="eyebrow"><span class="dot"></span> TU ESPACIO, A TU RITMO</div>
-    <h1>${name ? `Hola, ${escape(name)}.` : "Un poco de orden.<br>Más espacio para vos."}</h1>
-    <p>Un lugar para organizar la plata y las comidas.<br class="desktop-break"> Empezamos por una base simple, que cuida tus datos.</p>
-    <a class="button primary" href="#ajustes">Prepará tu espacio ${icon("arrow")}</a>
-    <div class="hero-art" aria-hidden="true"><div class="art-circle"></div><div class="art-card card-back"></div><div class="art-card card-front">${icon("leaf")}<span>De a un paso.</span><div class="art-line"></div><div class="art-line short"></div></div><span class="art-spark">✳</span></div>
-  </section>
-  <div class="section-heading"><div><span class="eyebrow">LO QUE VIENE</span><h2>Tu día a día, en un lugar</h2></div><span class="pill">Primera etapa</span></div>
-  <div class="module-grid"><a class="module-card" href="#finanzas"><span class="module-icon money">${icon("finanzas")}</span><span class="eyebrow">01 · FINANZAS</span><h3>Que la plata alcance.</h3><p>Gastos y presupuesto hasta el próximo cobro. Este módulo llega en la siguiente etapa.</p><span class="text-link">Ver el alcance ${icon("arrow")}</span></a>
-  <a class="module-card" href="#alimentacion"><span class="module-icon food">${icon("alimentacion")}</span><span class="eyebrow">02 · ALIMENTACIÓN</span><h3>Comer bien, planificar mejor.</h3><p>Compras, ingredientes y recetas conectados, sin contar dos veces el mismo gasto.</p><span class="text-link">Ver el alcance ${icon("arrow")}</span></a></div>
-  <section class="privacy-strip">${icon("shield")}<div><h3>Tu información se queda acá.</h3><p>Se guarda en este navegador. Exportá un respaldo para llevarla a otro dispositivo o recuperarla.</p></div><a href="#ajustes">Ir a respaldos ${icon("arrow")}</a></section>`;
+let noticeTimer: number | undefined;
+function announce(message: string, error = false) {
+  window.clearTimeout(noticeTimer);
+  notification.textContent = message;
+  notification.hidden = false;
+  notification.classList.toggle("error", error);
+  notification.setAttribute("role", error ? "alert" : "status");
+  if (!error)
+    noticeTimer = window.setTimeout(() => {
+      notification.hidden = true;
+    }, 5000);
 }
-
-function upcoming(current: "finanzas" | "alimentacion") {
-  const finance = current === "finanzas";
-  return `<section class="page-head"><span class="eyebrow">${finance ? "01 · TU PLATA" : "02 · TUS COMIDAS"}</span><h1>${finance ? "Finanzas" : "Alimentación"}</h1><p>${finance ? "Entender cuánto tenés y cuánto podés gastar." : "Conocer el costo de lo que cocinás."}</p></section>
-    <section class="panel roadmap"><span class="module-icon ${finance ? "money" : "food"}">${icon(current)}</span><span class="pill">Próxima etapa · aún no disponible</span><h2>${finance ? "Un presupuesto que se entiende." : "De la compra a la receta."}</h2><p>${finance ? "Vamos a incorporar saldo inicial, registro de gastos, presupuesto semanal y disponibilidad hasta el próximo cobro." : "Vamos a conectar ingredientes, precios, compras y recetas para calcular el costo por porción."}</p><ul>${finance ? "<li>Gastos con fecha, categoría y descripción.</li><li>Semanas del período, con cálculos transparentes.</li><li>Una compra de alimentos, un solo gasto.</li>" : "<li>Ingredientes con precio y cantidad del envase.</li><li>Recetas con cantidades y porciones.</li><li>Compras vinculadas a finanzas, sin duplicaciones.</li>"}</ul><p class="quiet">Esta entrega prepara la estructura y los respaldos. No registra ${finance ? "movimientos financieros" : "ingredientes ni compras"} todavía.</p><a class="button secondary" href="#inicio">Volver al inicio ${icon("arrow")}</a></section>`;
-}
-
-function settings() {
-  return `<section class="page-head"><span class="eyebrow">TU ESPACIO</span><h1>Ajustes y respaldos</h1><p>Lo básico para empezar. Lo importante para conservarlo.</p></section>
-    <div class="settings-grid"><section class="panel"><div class="panel-title"><span class="step">01</span><h2>Hacelo tuyo</h2></div>
-      <form id="profile-form"><label for="display-name">¿Cómo querés que te llamemos?</label><input id="display-name" name="displayName" maxlength="60" autocomplete="nickname" value="${escape(stateDoc.data.profile.displayName)}" placeholder="Tu nombre o un apodo (opcional)"><p class="hint">Solo se guarda en este dispositivo.</p><button class="button primary" type="submit">Guardar nombre ${icon("arrow")}</button></form>
-      <div class="divider"></div><label for="theme">Apariencia</label><select id="theme"><option value="system">Según el dispositivo</option><option value="light">Claro</option><option value="dark">Oscuro</option></select><p class="hint">Moneda: pesos uruguayos (UYU). Zona horaria: Uruguay.</p>
-    </section><section class="panel"><div class="panel-title"><span class="step">02</span><h2>Cuidá tus datos</h2></div><p>Un respaldo incluye todos los datos de este espacio. Hoy: nombre y preferencias; los módulos siguientes ampliarán el formato.</p>
-      <button class="button secondary full" id="export">${icon("download")} Exportar respaldo</button>
-      <label class="file-label" for="import">Importar un respaldo JSON</label><input type="file" id="import" accept="application/json,.json"><p class="hint">Hasta 2 MB. Revisás el contenido antes de reemplazar. Guardamos una copia previa.</p>
-      <div id="import-preview"></div><div class="divider"></div><h3>Copias automáticas</h3><p class="hint">Las últimas 5 copias de este espacio, antes de importar o restaurar. No sustituyen un archivo exportado.</p><div id="snapshots">Cargando copias…</div>
-    </section></div>
-    <section class="panel device-panel"><div>${icon("shield")}<h2>Guardado en este navegador</h2><p>Otro dispositivo tendrá su propio espacio. Si borrás los datos del sitio, podés perderlos: exportá un respaldo cada tanto.</p></div><button class="button secondary" id="persist">Solicitar almacenamiento persistente</button></section>`;
-}
-
-async function render() {
-  applyTheme();
-  const current = route();
-  app.innerHTML = `<a class="skip-link" href="#main">Saltar al contenido</a><div class="layout"><aside class="sidebar"><a class="brand" href="#inicio"><span class="brand-mark">f.</span><span>field<span class="brand-sub">SISTEMA PERSONAL</span></span></a><nav aria-label="Navegación principal">${routes.map((item) => `<a href="#${item}" ${current === item ? 'aria-current="page"' : ""}>${icon(item)}<span>${label(item)}</span>${current === item ? '<span class="nav-dot"></span>' : ""}</a>`).join("")}</nav><div class="sidebar-bottom"><span class="eyebrow">HECHO PARA TU DÍA A DÍA</span><p>Menos vueltas.<br>Más claridad.</p><span class="version">Field · etapa 1</span></div></aside>
-    <div class="main-wrap"><header class="topbar"><span class="breadcrumb">Tu espacio <span>/</span> ${label(current)}</span><div class="space-controls"><span class="space-label">${space === "demo" ? "Demo ficticia" : "Espacio personal"}</span><button id="switch-space" class="button compact">${space === "demo" ? "Volver a mis datos" : "Explorar demo"}</button></div></header>
-    ${space === "demo" ? '<div class="demo-banner" role="note"><strong>Estás en la demo.</strong> Datos ficticios en una base separada. Tus datos personales no cambian.</div>' : ""}
-    <main id="main" tabindex="-1">${current === "inicio" ? home() : current === "ajustes" ? settings() : upcoming(current)}</main>
-    <footer><span>Un paso a la vez.</span><span>Sin cuentas. Sin nube. En tu dispositivo.</span></footer></div></div>
-    <div id="notice" class="notice ${noticeError ? "error" : ""}" role="${noticeError ? "alert" : "status"}" ${notice ? "" : "hidden"}>${escape(notice)}</div>`;
-  const switchButton =
-    window.document.querySelector<HTMLButtonElement>("#switch-space")!;
-  switchButton.addEventListener("click", () => void switchSpace());
-  if (current === "ajustes") {
-    const theme = window.document.querySelector<HTMLSelectElement>("#theme")!;
-    theme.value = stateDoc.data.settings.theme;
-    theme.addEventListener(
-      "change",
-      () =>
-        void action(async () => {
-          const next = structuredClone(stateDoc.data);
-          next.settings.theme = theme.value as Theme;
-          stateDoc = await repository.save(next, stateDoc.revision);
-          applyTheme();
-          setNotice("Apariencia guardada en este dispositivo.");
-        }),
-    );
-    window.document
-      .querySelector("#profile-form")!
-      .addEventListener("submit", (event) => {
-        event.preventDefault();
-        void action(async () => {
-          const next = structuredClone(stateDoc.data);
-          next.profile.displayName = window.document
-            .querySelector<HTMLInputElement>("#display-name")!
-            .value.trim();
-          stateDoc = await repository.save(next, stateDoc.revision);
-          setNotice("Nombre guardado en este dispositivo.");
-        });
-      });
-    window.document
-      .querySelector("#export")!
-      .addEventListener("click", () => void action(exportFile));
-    window.document
-      .querySelector("#import")!
-      .addEventListener("change", (event) => void readImport(event));
-    window.document.querySelector("#persist")!.addEventListener(
-      "click",
-      () =>
-        void action(async () => {
-          const supported = typeof navigator.storage?.persist === "function";
-          const granted = supported ? await navigator.storage.persist() : false;
-          setNotice(
-            granted
-              ? "El navegador concedió almacenamiento persistente. Conservá igualmente tus respaldos."
-              : "El navegador no concedió almacenamiento persistente. Podés seguir usando Field y exportar respaldos.",
-          );
-        }),
-    );
-    await renderSnapshots();
-  }
-  window.document.title = `${label(current)} · Field`;
-}
-
-function setNotice(message: string, error = false) {
-  notice = message;
-  noticeError = error;
-  const element = window.document.querySelector<HTMLDivElement>("#notice");
-  if (element) {
-    element.textContent = message;
-    element.hidden = false;
-    element.classList.toggle("error", error);
-    element.setAttribute("role", error ? "alert" : "status");
-  }
-}
-
 async function action(fn: () => Promise<void>) {
   if (busy) return;
   busy = true;
   app.setAttribute("aria-busy", "true");
   const controls = [
-    ...app.querySelectorAll<
-      HTMLInputElement | HTMLButtonElement | HTMLSelectElement
-    >("button, input, select"),
+    ...document.querySelectorAll<
+      HTMLButtonElement | HTMLInputElement | HTMLSelectElement
+    >("button,input,select"),
   ];
-  controls.forEach((control) => (control.disabled = true));
+  controls.forEach((c) => (c.disabled = true));
   try {
     await fn();
   } catch (error) {
-    setNotice(
+    const message =
       error instanceof Error
         ? error.message
-        : "No se pudo completar la operación. No se confirmó el guardado.",
-      true,
-    );
+        : "No se pudo completar la operación.";
+    if (editor.open) {
+      editor.querySelector<HTMLElement>("#form-error")!.textContent = message;
+    } else announce(message, true);
   } finally {
     busy = false;
     app.removeAttribute("aria-busy");
-    controls.forEach((control) => (control.disabled = false));
+    controls.forEach((c) => (c.disabled = false));
   }
 }
-
-async function switchSpace() {
-  await action(async () => {
-    const nextSpace = space === "personal" ? "demo" : "personal";
-    const nextRepository = createRepository(nextSpace);
-    const nextDocument = await nextRepository.load();
-    space = nextSpace;
-    repository = nextRepository;
-    stateDoc = nextDocument;
-    pending = null;
-    notice = "";
-    // Solo la selección del espacio usa sessionStorage; los datos viven en IndexedDB.
-    try {
-      sessionStorage.setItem("field-space", space);
-    } catch {
-      /* seguirá personal al recargar */
-    }
-    await render();
-  });
+async function commit(change: (data: Data) => void, message: string) {
+  const next = structuredClone(state.data);
+  change(next);
+  state = await repository.save(next, state.revision);
+  announce(message);
 }
-
-async function exportFile() {
-  // Leer la última revisión incluye cambios confirmados en otra pestaña.
-  stateDoc = await repository.load();
-  const blob = new Blob([exportBackup(space, stateDoc.data)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = window.document.createElement("a");
-  link.href = url;
-  link.download = `field-${space}-${new Date().toISOString().slice(0, 10)}.json`;
-  app.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
-  setNotice("Respaldo generado. Guardalo en Archivos o en una carpeta segura.");
+function settingsView() {
+  const data = state.data;
+  return `<div class="page-heading"><div><span class="eyebrow">DATOS Y PREFERENCIAS</span><h1>Ajustes y respaldos</h1></div></div><div class="settings-grid"><section class="panel"><h2>Preferencias</h2><form id="profile-form">${input("¿Cómo querés que te llamemos?", "displayName", data.profile.displayName, "text", 'maxlength="60" autocomplete="nickname"')}${button("Guardar nombre", "save-profile", "primary", 'type="submit"')}</form>${select("Apariencia", "theme", `<option value="system">Según el dispositivo</option><option value="light">Claro</option><option value="dark">Oscuro</option>`)}<p class="footnote">Pesos uruguayos · America/Montevideo</p><div class="divider"></div><h3>Almacenamiento local</h3><p>Los datos se guardan en este navegador. Otro dispositivo tiene su propio espacio. Exportá un archivo para trasladarlos o recuperarlos.</p>${button("Solicitar almacenamiento persistente", "persist", "secondary small")}</section><section class="panel"><h2>Respaldo completo</h2><p>Incluye presupuestos, movimientos, ingredientes, recetas, compras, preparaciones y preferencias de este espacio.</p><div class="backup-actions">${button(icon("download") + " Exportar respaldo", "export", "primary")}<label class="field"><span>Importar un respaldo JSON</span><input id="import-file" type="file" accept="application/json,.json"></label></div><p class="footnote">Hasta 2 MB. El archivo se valida antes de reemplazar datos; se crea una copia previa. Los archivos no están cifrados.</p><div class="divider"></div><h3>Copias automáticas</h3><p class="footnote">Las últimas cinco copias, antes de importar, restaurar o migrar.</p><div id="snapshots">Cargando copias…</div></section></div>`;
 }
-
-async function readImport(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-  await action(async () => {
-    pending = null;
-    window.document.querySelector("#import-preview")!.replaceChildren();
-    if (file.size > 2_000_000)
-      throw new Error("El respaldo supera el límite de 2 MB de esta versión.");
-    const next = parseBackup(await file.text(), space);
-    pending = next;
-    pendingReason = "Antes de importar un respaldo";
-    showPreview(next, "Revisá antes de importar");
-  });
-}
-
-function showPreview(data: Data, title: string) {
-  const container =
-    window.document.querySelector<HTMLDivElement>("#import-preview")!;
-  container.innerHTML = `<div class="import-preview"><h3>${title}</h3><p>Espacio: ${space === "personal" ? "personal" : "demo ficticia"}<br>Nombre: ${escape(data.profile.displayName || "Sin nombre")}<br>Apariencia: ${escape({ system: "Según el dispositivo", dark: "Oscuro", light: "Claro" }[data.settings.theme])}</p><p class="hint">Reemplazará los datos de este espacio. Se guardará una copia de los datos actuales.</p><div class="button-row"><button id="confirm-import" class="button primary">Confirmar reemplazo</button><button id="cancel-import" class="button secondary">Cancelar</button></div></div>`;
-  window.document.querySelector("#confirm-import")!.addEventListener(
-    "click",
-    () =>
+async function render() {
+  applyTheme();
+  const current = route(),
+    labels = {
+      inicio: "Inicio",
+      finanzas: "Finanzas",
+      cocina: "Cocina",
+      ajustes: "Ajustes y respaldos",
+    },
+    keys = ["inicio", "finanzas", "cocina", "ajustes"] as const;
+  const glyph = {
+    inicio: "home",
+    finanzas: "finance",
+    cocina: "food",
+    ajustes: "settings",
+  } as const;
+  app.innerHTML = `<a class="skip-link" href="#main">Saltar al contenido</a><header class="app-header"><a href="#inicio" class="brand"><span class="brand-mark">f.</span>field<span class="brand-label">PERSONAL</span></a><nav aria-label="Navegación principal">${keys.map((key) => `<a href="#${key}" aria-label="${labels[key]}" ${current === key ? 'aria-current="page"' : ""}>${icon(glyph[key])}<span>${key === "ajustes" ? "Ajustes" : labels[key]}</span></a>`).join("")}</nav><div class="header-tools"><span class="profile-name">${esc(state.data.profile.displayName)}</span>${button(space === "demo" ? "Volver a mis datos" : "Explorar demo", "switch-space", "compact")}</div></header>${space === "demo" ? `<div class="demo-banner"><span><strong>Demo ficticia</strong> · Base separada. Tus datos personales no cambian.</span>${button("Cargar demo completa", "reset-demo", "text")}</div>` : ""}<main id="main" tabindex="-1">${current === "inicio" ? homeView(state.data) : current === "finanzas" ? financeView(state.data) : current === "cocina" ? kitchenView(state.data, kitchenTab()) : settingsView()}</main><footer><span>UYU · Datos en este dispositivo</span><a href="#ajustes">Exportar y respaldar ${icon("arrow")}</a></footer>`;
+  document.title = labels[current] + " · Field";
+  if (current === "ajustes") {
+    const theme = app.querySelector<HTMLSelectElement>('[name="theme"]')!;
+    theme.value = state.data.settings.theme;
+    theme.addEventListener(
+      "change",
+      () =>
+        void action(async () => {
+          await commit((d) => {
+            d.settings.theme = theme.value as Theme;
+          }, "Apariencia guardada.");
+          applyTheme();
+        }),
+    );
+    app.querySelector("#profile-form")!.addEventListener("submit", (event) => {
+      event.preventDefault();
       void action(async () => {
-        if (!pending) return;
-        stateDoc = await repository.replace(
-          pending,
-          stateDoc.revision,
-          pendingReason,
-        );
-        pending = null;
-        setNotice(
-          "Datos restaurados. La copia anterior quedó guardada en este espacio.",
-        );
-        await render();
-      }),
-  );
-  window.document
-    .querySelector("#cancel-import")!
-    .addEventListener("click", () => {
-      pending = null;
-      container.replaceChildren();
-      const input = window.document.querySelector<HTMLInputElement>("#import");
-      if (input) input.value = "";
+        const name = app
+          .querySelector<HTMLInputElement>('[name="displayName"]')!
+          .value.trim();
+        await commit((d) => {
+          d.profile.displayName = name;
+        }, "Nombre guardado en este dispositivo.");
+        const profile = app.querySelector(".profile-name");
+        if (profile) profile.textContent = name;
+      });
     });
+    app.querySelector("#import-file")!.addEventListener("change", (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      (event.target as HTMLInputElement).value = "";
+      if (file)
+        void action(async () => {
+          if (file.size > 2_000_000)
+            throw new Error("El respaldo supera el límite de 2 MB.");
+          const data = parseBackup(await file.text(), space);
+          openRestore(data, "Antes de importar un respaldo");
+        });
+    });
+    await renderCopies();
+  }
+  if (current === "finanzas") {
+    const search = app.querySelector<HTMLInputElement>("#movement-search"),
+      type = app.querySelector<HTMLSelectElement>("#movement-type");
+    const filter = () => {
+      const rows = periodMovements(state.data).filter(
+        (m) =>
+          (type?.value === "all" || m.type === type?.value) &&
+          `${m.description} ${m.category}`
+            .toLocaleLowerCase("es-UY")
+            .includes(search?.value.toLocaleLowerCase("es-UY") ?? ""),
+      );
+      app.querySelector("#movement-list")!.innerHTML = rows.length
+        ? movementRows(rows)
+        : '<p class="empty-message">No hay movimientos para este filtro.</p>';
+    };
+    search?.addEventListener("input", filter);
+    type?.addEventListener("change", filter);
+  }
 }
-
-async function renderSnapshots() {
-  const target = window.document.querySelector<HTMLDivElement>("#snapshots")!;
+function editorShell(title: string, content: string, save = "Guardar") {
+  editor.innerHTML = `<div class="editor-heading"><h2>${title}</h2><button type="button" class="icon-button" data-action="close-editor" aria-label="Cerrar formulario">${icon("close")}</button></div><form id="editor-form">${content}<p id="form-error" class="form-error" role="alert"></p><div class="editor-footer"><button type="button" class="button secondary" data-action="close-editor">Cancelar</button><button type="submit" class="button primary">${save}</button></div></form>`;
+  editor.showModal();
+  editor
+    .querySelector<HTMLInputElement | HTMLSelectElement>("input, select")
+    ?.focus();
+}
+function openEditor(
+  kind: EditorKind,
+  id?: string,
+  recipeId?: string,
+  after?: () => void,
+) {
+  if (busy) return;
+  if (
+    (kind === "movement" || kind === "purchase") &&
+    !id &&
+    !activePeriod(state.data)
+  ) {
+    openEditor("period", undefined, undefined, () =>
+      openEditor(kind, id, recipeId, after),
+    );
+    return;
+  }
+  if (
+    (kind === "recipe" || kind === "purchase") &&
+    !state.data.ingredients.length
+  ) {
+    openEditor("ingredient", undefined, undefined, () =>
+      openEditor(kind, id, recipeId, after),
+    );
+    return;
+  }
+  if (kind === "preparation" && !id && !state.data.recipes.length) {
+    openEditor("recipe", undefined, undefined, () => openEditor("preparation"));
+    return;
+  }
+  editing = kind;
+  editingSpec = formSpec(kind, state.data, id, recipeId);
+  followup = after;
+  editorShell(editingSpec.title, editingSpec.html);
+  editor.querySelector("#editor-form")!.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const form = new FormData(event.target as HTMLFormElement),
+      spec = editingSpec!,
+      continuation = followup;
+    void action(async () => {
+      await commit(
+        (d) => spec.submit(d, form),
+        "Guardado en este dispositivo.",
+      );
+      editor.close();
+      await render();
+      if (continuation) {
+        busy = false;
+        continuation();
+      }
+    });
+  });
+  editor.querySelector('[name="type"]')?.addEventListener("change", (event) => {
+    const category =
+      editor.querySelector<HTMLSelectElement>('[name="category"]')!;
+    if ((event.target as HTMLSelectElement).value === "income")
+      category.value = "Ingreso";
+    else if (category.value === "Ingreso") category.value = "Otros";
+  });
+  editor
+    .querySelector('[name="recipeId"]')
+    ?.addEventListener("change", (event) => {
+      const recipe = state.data.recipes.find(
+        (r) => r.id === (event.target as HTMLSelectElement).value,
+      );
+      if (recipe && !id) {
+        editor.querySelector<HTMLInputElement>('[name="portions"]')!.value =
+          String(recipe.portions);
+        editor.querySelector<HTMLInputElement>('[name="remaining"]')!.value =
+          String(recipe.portions);
+      }
+    });
+  updateCostPreview();
+}
+function updateCostPreview() {
+  const output = editor.querySelector<HTMLOutputElement>("#cost-preview");
+  if (!output) return;
+  try {
+    const form = new FormData(
+      editor.querySelector<HTMLFormElement>("#editor-form")!,
+    );
+    if (editing === "purchase") {
+      const total = form
+        .getAll("totalCents")
+        .reduce<number>((s, p) => s + parseMoney(String(p)), 0);
+      output.textContent =
+        "Total de la compra: " + money(total) + " · un único gasto";
+    } else if (editing === "recipe") {
+      const ids = form.getAll("ingredientId"),
+        qty = form.getAll("quantity"),
+        unit = form.getAll("unit");
+      const recipe: Recipe = {
+        id: "preview",
+        name: "Preview",
+        portions: Number(form.get("portions")),
+        lines: ids.map((id, i) => ({
+          ingredientId: String(id),
+          quantity: Number(qty[i]),
+          unit: String(unit[i]) as Unit,
+        })),
+      };
+      const cost = recipeCost(recipe, state.data.ingredients);
+      output.textContent =
+        "Total " +
+        money(cost.total) +
+        " · " +
+        money(cost.perPortion) +
+        " por porción";
+    }
+  } catch {
+    output.textContent =
+      "Completá las cantidades y elegí unidades compatibles para calcular el costo.";
+  }
+}
+editor.addEventListener("change", (event) => {
+  const target = event.target as HTMLSelectElement;
+  if (target.name === "ingredientId") {
+    const row = target.closest("[data-line]")!,
+      ingredient = state.data.ingredients.find((i) => i.id === target.value);
+    if (ingredient) {
+      row.querySelector<HTMLSelectElement>('[name="unit"]')!.innerHTML =
+        unitOptions(ingredient.unit);
+      if (editing === "purchase") {
+        row.querySelector<HTMLInputElement>('[name="quantity"]')!.value =
+          String(ingredient.quantity);
+        row.querySelector<HTMLInputElement>('[name="totalCents"]')!.value = (
+          ingredient.priceCents / 100
+        ).toFixed(2);
+      }
+    }
+  }
+  updateCostPreview();
+});
+editor.addEventListener("input", updateCostPreview);
+editor.addEventListener("click", (event) => {
+  const remove = (event.target as Element).closest(".remove-line");
+  if (remove && !busy) {
+    remove.closest("[data-line]")!.remove();
+    updateCostPreview();
+  }
+});
+function openRestore(data: Data, reason: string) {
+  editing = undefined;
+  editorShell(
+    "Revisá antes de restaurar",
+    `<div class="restore-summary"><strong>${space === "demo" ? "Demo ficticia" : "Espacio personal"}</strong><p>Nombre: ${esc(data.profile.displayName || "Sin nombre")}</p><dl><div><dt>Períodos</dt><dd>${data.periods.length}</dd></div><div><dt>Movimientos</dt><dd>${data.movements.length}</dd></div><div><dt>Ingredientes</dt><dd>${data.ingredients.length}</dd></div><div><dt>Recetas</dt><dd>${data.recipes.length}</dd></div><div><dt>Compras</dt><dd>${data.purchases.length}</dd></div><div><dt>Preparaciones</dt><dd>${data.preparations.length}</dd></div></dl></div><p class="form-note">Reemplazará este espacio. Conservamos una copia de los datos actuales antes de restaurar.</p>`,
+    "Confirmar reemplazo",
+  );
+  editor.querySelector("#editor-form")!.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void action(async () => {
+      state = await repository.replace(data, state.revision, reason);
+      editor.close();
+      announce("Datos restaurados. La copia anterior quedó guardada.");
+      await render();
+    });
+  });
+}
+async function renderCopies() {
+  const target = app.querySelector("#snapshots")!;
   try {
     const copies = await repository.snapshots();
-    // Una navegación mientras se lee no debe dibujar copias en otra pantalla.
     if (!target.isConnected) return;
-    if (!copies.length) {
-      target.textContent =
-        "Todavía no hay copias. Se crean antes de reemplazar datos.";
-      return;
-    }
-    target.innerHTML = copies
-      .map(
-        (copy, index) =>
-          `<div class="snapshot"><div><strong>${escape(copy.reason)}</strong><span>${escape(localDate(copy.createdAt))}</span></div><button class="button compact" data-copy="${index}">Restaurar</button></div>`,
-      )
-      .join("");
-    target
-      .querySelectorAll<HTMLButtonElement>("[data-copy]")
-      .forEach((button) =>
-        button.addEventListener(
-          "click",
-          () =>
-            void action(async () => {
-              const copy = copies[Number(button.dataset.copy)];
-              const data = migrateData(copy.data);
-              pending = data;
-              pendingReason = "Antes de restaurar una copia automática";
-              showPreview(data, "Revisá la copia a restaurar");
-              window.document
-                .querySelector("#import-preview")!
-                .scrollIntoView({ block: "center" });
-            }),
-        ),
-      );
-  } catch (error) {
-    target.textContent = "No se pudieron leer las copias.";
-    setNotice(
-      error instanceof Error ? error.message : "Error al leer copias.",
-      true,
+    target.innerHTML = copies.length
+      ? copies
+          .map(
+            (c, i) =>
+              `<div class="snapshot"><div><strong>${esc(c.reason)}</strong><small>${new Intl.DateTimeFormat("es-UY", { dateStyle: "short", timeStyle: "short", timeZone: "America/Montevideo" }).format(new Date(c.createdAt))}</small></div>${button("Restaurar", "restore-copy", "text", `data-index="${i}"`)}</div>`,
+          )
+          .join("")
+      : '<p class="footnote">Todavía no hay copias automáticas.</p>';
+    target.querySelectorAll("[data-index]").forEach((button) =>
+      button.addEventListener("click", () => {
+        if (!busy)
+          try {
+            openRestore(
+              migrateData(
+                copies[Number((button as HTMLElement).dataset.index)].data,
+              ),
+              "Antes de restaurar una copia",
+            );
+          } catch (e) {
+            announce((e as Error).message, true);
+          }
+      }),
     );
+  } catch (e) {
+    target.textContent = "No se pudieron leer las copias.";
+    announce((e as Error).message, true);
   }
 }
-
+async function exportFile() {
+  state = await repository.load();
+  const blob = new Blob([exportBackup(space, state.data)], {
+      type: "application/json",
+    }),
+    url = URL.createObjectURL(blob),
+    link = document.createElement("a");
+  link.href = url;
+  link.download = `field-${space}-${today()}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  announce("Respaldo generado. Guardalo fuera del navegador.");
+}
+async function switchSpace() {
+  const nextSpace = space === "personal" ? "demo" : "personal",
+    nextRepository = createRepository(nextSpace),
+    next = await nextRepository.load();
+  space = nextSpace;
+  repository = nextRepository;
+  state = next;
+  try {
+    sessionStorage.setItem("field-space", space);
+  } catch {
+    /*solo selección*/
+  }
+  notification.hidden = true;
+  await render();
+}
+const editorKinds = [
+  "period",
+  "movement",
+  "ingredient",
+  "recipe",
+  "purchase",
+  "preparation",
+];
+document.addEventListener("click", (event) => {
+  const target = (event.target as Element).closest<HTMLElement>(
+    "[data-action]",
+  );
+  if (!target) return;
+  const kind = target.dataset.action!,
+    id = target.dataset.id;
+  if (kind === "close-editor") {
+    if (!busy) editor.close();
+    return;
+  }
+  if (kind === "add-line") {
+    event.preventDefault();
+    if (!busy) {
+      editor
+        .querySelector("#builder-lines")!
+        .insertAdjacentHTML(
+          "beforeend",
+          lineRow(state.data, undefined, editing === "purchase"),
+        );
+      updateCostPreview();
+    }
+    return;
+  }
+  if (busy) return;
+  if (editorKinds.includes(kind)) {
+    openEditor(kind as EditorKind, id, target.dataset.recipe);
+    return;
+  }
+  if (kind === "switch-space") {
+    void action(switchSpace);
+    return;
+  }
+  if (kind === "export") {
+    void action(exportFile);
+    return;
+  }
+  if (kind === "persist") {
+    void action(async () => {
+      const granted =
+        typeof navigator.storage?.persist === "function" &&
+        (await navigator.storage.persist());
+      announce(
+        granted
+          ? "El navegador concedió almacenamiento persistente. Conservá tus respaldos."
+          : "El navegador no concedió persistencia. Podés seguir usando Field y exportar respaldos.",
+      );
+    });
+    return;
+  }
+  if (kind === "reset-demo") {
+    if (
+      space === "demo" &&
+      confirm("¿Reemplazar solamente la demo con datos ficticios completos?")
+    )
+      void action(async () => {
+        state = await repository.replace(
+          createDemo(),
+          state.revision,
+          "Antes de recargar la demo",
+        );
+        announce("Demo ficticia cargada. Tus datos personales no cambiaron.");
+        await render();
+      });
+    return;
+  }
+  if (kind === "consume") {
+    void action(async () => {
+      await commit((d) => {
+        const prep = d.preparations.find((p) => p.id === id)!;
+        if (prep.remaining < 1) throw new Error("No quedan porciones.");
+        prep.remaining--;
+      }, "Una porción consumida. No se agregó ningún gasto.");
+      await render();
+    });
+    return;
+  }
+  if (kind === "switch-period") {
+    void action(async () => {
+      await commit((d) => {
+        d.activePeriodId = id!;
+      }, "Período seleccionado.");
+      await render();
+    });
+    return;
+  }
+  if (kind.startsWith("delete-") && id) {
+    if (
+      confirm(
+        "¿Eliminar este registro? Si es una compra, también se elimina su único movimiento financiero.",
+      )
+    )
+      void action(async () => {
+        await commit(
+          (d) => deleteEntity(d, kind.slice(7), id),
+          "Registro eliminado.",
+        );
+        await render();
+      });
+  }
+});
 window.addEventListener("hashchange", () => {
-  pending = null;
-  void render().then(() => {
-    window.document.querySelector<HTMLElement>("#main")?.focus();
-    window.scrollTo(0, 0);
-  });
+  if (state)
+    void render().then(() => {
+      document.querySelector<HTMLElement>("#main")?.focus();
+      window.scrollTo(0, 0);
+    });
 });
 systemTheme.addEventListener("change", () => {
-  if (stateDoc) applyTheme();
+  if (state) applyTheme();
 });
-
+editor.addEventListener("cancel", (event) => {
+  if (busy) event.preventDefault();
+});
 async function boot() {
   try {
     try {
       space =
         sessionStorage.getItem("field-space") === "demo" ? "demo" : "personal";
     } catch {
-      /* predeterminado */
+      /*predeterminado*/
     }
     repository = createRepository(space);
-    stateDoc = await repository.load();
+    state = await repository.load();
     await render();
-  } catch (error) {
-    app.innerHTML = `<main class="boot-error"><span class="brand-mark">f.</span><h1>No pudimos abrir tu espacio.</h1><p>${escape(error instanceof Error ? error.message : "El almacenamiento no está disponible.")}</p><p>No se reemplazaron tus datos. Probá cerrar otras pestañas y comprobar que este navegador permite almacenamiento.</p><button class="button primary" id="retry">Volver a intentar</button></main>`;
-    window.document
+  } catch (e) {
+    app.innerHTML = `<main class="boot-error"><h1>No pudimos abrir tus datos</h1><p>${esc((e as Error).message)}</p><p>El estado anterior no se reemplazó. Cerrá otras pestañas y comprobá que el navegador permite almacenamiento.</p><button class="button primary" id="retry">Volver a intentar</button></main>`;
+    document
       .querySelector("#retry")!
       .addEventListener("click", () => location.reload());
   }
 }
+document.addEventListener("visibilitychange", () => {
+  if (
+    document.visibilityState === "visible" &&
+    state &&
+    !busy &&
+    !editor.open &&
+    route() !== "ajustes"
+  )
+    void render();
+});
 void boot();

@@ -46,7 +46,7 @@ describe("respaldo y validación", () => {
     },
   );
   it("rechaza un esquema futuro en lugar de descartarle campos", () => {
-    expect(() => validateData({ ...createData(), schemaVersion: 2 })).toThrow(
+    expect(() => validateData({ ...createData(), schemaVersion: 3 })).toThrow(
       "más nueva",
     );
   });

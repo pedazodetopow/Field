@@ -1,4 +1,17 @@
-# Validación de la etapa 1
+# Validación de Field
+
+## Rediseño funcional — 13 de octubre de 2026
+
+- TypeScript estricto y build de producción: completados.
+- `npm test`: 38 pruebas de dominio y persistencia pasaron, sin fallos ni omitidas.
+- Chromium local móvil/escritorio: 22 flujos pasaron, sin fallos ni omitidos. Incluyen CRUD financiero y de cocina, compras con varias líneas sin duplicar gasto, consumo de porciones, períodos guardados, respaldo completo, errores de importación, migración del esquema publicado y temas.
+- Composición: capturas revisadas en 390 px y 1440 px, claras y oscuras, con Inicio, Finanzas, Cocina y formulario de compra con varias líneas. Playwright también comprobó 390/400/1280 px y diálogo sin desborde.
+- La primera corrida detectó etiquetas de selectores ambiguas y reimportación del mismo archivo tras cancelar. Se corrigieron nombres accesibles y limpieza del input; las pruebas afectadas y la suite completa pasaron después.
+- El ejemplo requerido pasó: 400 g de pollo a $ 350/kg = $ 140; cuatro porciones = $ 35 cada una. Los ingresos, ahorro, semanas parciales, déficits, centésimos y cambios de período tienen pruebas.
+- Se conservó el test significativo de falta de espacio: una escritura abortada no guarda un reemplazo ni una copia parcial. La migración 1→2 también fue ejercitada en IndexedDB real del navegador.
+- WebKit y despliegue de esta versión: el workflow ejecutará la suite completa antes de publicar; el resultado remoto se registra en PUBLICACION.md. No se afirma prueba física en iPhone.
+
+## Historial: etapa 1
 
 Fecha: 13 de octubre de 2026. Alcance: estructura, navegación, tema, persistencia, demo separada, respaldos y preparación de GitHub Pages.
 

@@ -1,57 +1,72 @@
-# Field · Sistema personal
+# Field · Finanzas y cocina
 
-**Aplicación publicada:** [Abrir Field](https://pedazodetopow.github.io/Field/) — enlace comprobado tras completar el despliegue en GitHub Pages.
+Aplicación personal para Uruguay, en español rioplatense. TypeScript, Vite, CSS propio e IndexedDB; sin backend, cuentas, servicios pagos ni sincronización.
 
-Aplicación personal en español rioplatense para Uruguay. Primera etapa: base responsive, navegación, perfil mínimo, temas, IndexedDB y respaldos. Sin backend, cuentas ni sincronización.
+**Sitio:** [Abrir Field](https://pedazodetopow.github.io/Field/). La nueva versión se publica desde main únicamente si pasa la validación de GitHub Actions.
 
-Finanzas y alimentación son los módulos prioritarios siguientes. Sus páginas actuales explican el alcance pendiente; todavía no registran gastos, compras ni recetas. Actividad, hábitos y PWA offline quedan para después. Ver [plan](docs/PLAN.md), [reglas](AGENTS.md) y [resultados de validación](docs/VALIDACION.md).
+## Uso
 
-## Probar en tu computadora
+### Presupuesto y movimientos
 
-Requiere Node.js 24 LTS (mínimo 22.12) y npm.
+1. En **Finanzas**, configurá saldo inicial, ahorro a reservar, inicio y próximo cobro.
+2. Anotá ingresos y gastos con fecha, categoría y descripción. Podés editarlos, eliminarlos, buscar y filtrar por tipo.
+3. Consultá saldo real, disponible, semanas y categorías. Abrí **Cómo se calcula** para ver las fórmulas y tu cuenta concreta.
+4. Al cobrar, creá un nuevo período con el saldo que confirmes. El anterior conserva todos sus movimientos y puede consultarse desde **Períodos guardados**.
+
+Los montos de los formularios se ingresan sin separadores de miles: `40000` o `350,50`. Los resultados se muestran como `$ 40.000`, con decimales cuando corresponden.
+
+- Saldo real = saldo inicial + ingresos registrados − gastos registrados.
+- Disponible = saldo real − ahorro reservado. Reservar ahorro no crea un gasto ni supone una transferencia bancaria.
+- Las semanas son bloques de siete días desde el inicio; la última puede ser parcial. El cobro queda fuera del período.
+- Se reparte el presupuesto inicial en centésimos exactos, los ingresos entran en la semana en que se reciben y el remanente positivo o negativo pasa a la siguiente.
+- La referencia diaria de Inicio usa el resto de la semana y sus días pendientes. Finanzas muestra además la referencia del período completo.
+- Los períodos terminados no dividen por cero ni generan automáticamente ingresos. Los gastos con saldo negativo se conservan.
+- Las semanas futuras son proyecciones que cambian al registrar movimientos. No se presentan como dinero adicional.
+
+### Ingredientes, recetas, compras y preparaciones
+
+1. En **Cocina → Ingredientes**, cargá nombre, precio y cantidad del envase. Ejemplo: pollo, 1 kg, $ 350.
+2. En **Recetas**, combiná ingredientes, cantidades y unidades, e indicá porciones. El formulario calcula el costo mientras completás las líneas; podés consultar el desglose de cada receta guardada.
+3. En **Compras**, anotá ingredientes comprados, cantidades y precios pagados. La compra y su único gasto de Alimentación se guardan en la misma transacción.
+4. En **Preparaciones**, registrá una receta preparada, fecha y porciones. Descontá una porción con **Consumir 1** o editá las disponibles. Inicio resume las comidas disponibles.
+
+**Ejemplo probado:** 400 g de pollo comprado a $ 350/kg cuestan $ 140; si la receta solo lleva ese pollo y produce cuatro porciones, cada una cuesta $ 35.
+
+- Se convierten g↔kg y ml↔l. Las unidades contables quedan como unidades; no se inventan densidades para convertir ml a g.
+- El costo se conserva con precisión intermedia y se redondea al final, a centésimos. El precio actual de referencia recalcula las recetas, sin generar movimientos financieros.
+- Guardar una compra usa sus precios como nueva referencia de los envases. Editar la compra modifica el mismo gasto; eliminarla quita también ese gasto. Eliminar una compra no revierte los precios de referencia, que siguen siendo editables.
+- Usar ingredientes en una receta y registrar preparaciones **no agrega otro gasto**.
+- Una preparación conserva nombre y costo calculado al registrarla, incluso si luego cambiás precios o eliminás la receta. No reconstruye precios históricos de días anteriores.
+- Para borrar ingredientes usados, primero resolvé sus referencias en recetas o compras. Borrar una receta conserva las preparaciones y sus porciones.
+- Las porciones son un registro manual; no se implementó inventario de materia prima ni control de vencimientos.
+
+## Datos, demo y respaldos
+
+Personal y demo viven en bases distintas: `field-personal` y `field-demo`. La demo es ficticia, está identificada permanentemente y puede recargarse sin tocar datos personales. Si tu demo era la base antigua, usá **Cargar demo completa** dentro de la demo.
+
+El esquema 2 migra automáticamente el perfil y preferencias de la versión publicada, conserva sus identificadores y guarda una copia previa. No se borran datos al actualizar la app. Se conservan cinco copias locales antes de migrar, importar o restaurar.
+
+En **Ajustes y respaldos**, exportá todas las entidades del espacio activo a JSON. Para importar, elegí el archivo, revisá cantidades y confirmá. Se rechazan archivos inválidos, vínculos inconsistentes, datos de otro espacio y versiones futuras. Una importación confirmada reemplaza el espacio activo y guarda una copia anterior. Las copias automáticas no se incluyen en el archivo exportado.
+
+Los archivos no están cifrados: guardalos fuera del repositorio. El navegador puede borrar almacenamiento local y dos dispositivos no comparten datos automáticamente. Un conflicto de revisión entre pestañas se rechaza para evitar sobrescribir cambios ajenos; recargá antes de continuar.
+
+## Desarrollo y pruebas
+
+Node 24 LTS (mínimo 22.12) y npm. Usar el checkout existente.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Abrí la dirección que muestra Vite y usá la ruta `/Field/`. Para probar el build de producción:
+Abrí la dirección que muestra Vite con la ruta `/Field/`. Para probar producción:
 
 ```sh
 npm run build
 npm run preview
 ```
 
-El servidor de desarrollo y el preview escuchan en la red local, pero esta base requiere un contexto seguro para generar identificadores. En tu computadora, el acceso local que muestra Vite cumple ese requisito. En el iPhone usá la URL HTTPS de Pages; el acceso por IP y HTTP no es un flujo soportado. Esta etapa no funciona sin conexión ni incluye instalación PWA.
-
-## Publicar gratis en GitHub Pages
-
-El build está preparado para el repositorio `pedazodetopow/Field`, con base `/Field/` y navegación por hash.
-
-1. Incorporá los cambios a la rama `main` en GitHub.
-2. En el repositorio, abrí **Settings → Pages → Build and deployment → Source** y elegí **GitHub Actions**. Actions debe estar habilitado.
-3. El workflow [pages.yml](.github/workflows/pages.yml) ejecuta instalación con lockfile, pruebas, typecheck, build y pruebas de navegador. Publica solamente cuando pasa la validación; los pull requests validan sin desplegar.
-4. Si activaste Pages después de subir el código, ejecutá **Actions → Validar y publicar Field → Run workflow** en `main`.
-5. Usá la URL que devuelve el job **Publicar**. No se considera publicada hasta que el despliegue termine y la URL devuelta responda correctamente.
-
-En el iPhone, abrí esa URL HTTPS en Safari. El código y el workflow ya se incorporaron a `main` mediante un push de avance directo, sin forzar el historial. La suite completa de navegador pasó en GitHub Actions. Pages está activado y el despliegue se completó. Se comprobó HTTPS, respuesta 200 y coincidencia de los recursos públicos con el build validado. Ver [estado de publicación y acción manual pendiente](docs/PUBLICACION.md).
-
-Si cambiás el nombre del repositorio o publicás bajo otro path, ajustá `base` en `vite.config.ts`. Mantener el mismo origen público conserva el acceso a los datos locales; cambiar de dominio requiere trasladarlos con un respaldo.
-
-## Datos y respaldos
-
-- Personal y demo usan bases IndexedDB distintas: `field-personal` y `field-demo`. Ambos empiezan con preferencias; la demo agrega un nombre ficticio identificado.
-- El selector de espacio vive en sessionStorage de la pestaña. Cambiarlo no copia ni elimina datos. Una nueva pestaña empieza en personal.
-- En **Ajustes y respaldos**, podés guardar nombre/apodo, elegir apariencia y exportar todos los datos activos del espacio a JSON. Las copias automáticas locales no se incluyen en el archivo exportado.
-- Para importar, elegí un archivo, revisá el resumen y confirmá. Un respaldo de demo solamente se importa en demo; uno personal, en personal. JSON inválido, campos desconocidos y versiones futuras se rechazan antes de modificar datos.
-- Antes de importar, restaurar una copia o migrar el esquema, se conserva una copia anterior. Se retienen las cinco más recientes; podés restaurarlas desde la misma pantalla. La copia y el reemplazo se confirman en una sola transacción.
-- Si otra pestaña cambió los datos, Field rechaza la escritura desactualizada y te pide recargar. No fusiona cambios automáticamente.
-- El navegador puede denegar almacenamiento persistente o borrar datos locales. La solicitud de persistencia es opcional; exportá un archivo y guardalo fuera del navegador. Computadora, Safari y futuras apps instaladas pueden tener espacios diferentes: no asumir que comparten almacenamiento.
-- Los respaldos no están cifrados. Conservá tus archivos privados fuera del repositorio.
-
-El esquema de datos y el formato del respaldo están versionados por separado. La versión 0 soportada es un formato previo de desarrollo para probar migraciones; no es un importador del proyecto de referencia. La interfaz `Repository` permite sumar entidades y otro adaptador más adelante, sin implementar nube ahora.
-
-## Pruebas
+El acceso local de tu computadora es un contexto seguro. En el iPhone usá HTTPS de Pages; generar identificadores requiere un contexto seguro y el acceso por IP/HTTP no es el flujo soportado. No hay PWA offline ni service worker en esta versión.
 
 ```sh
 npm test
@@ -60,26 +75,23 @@ npx playwright install --with-deps chromium webkit
 npm run test:e2e
 ```
 
-Las pruebas de navegador corren sobre `dist`, bajo `/Field/`; ejecutá el build primero. Playwright inicia y detiene su propio servidor de preview. Usa un perfil aislado por prueba con datos sintéticos.
-
-En el entorno de nube actual existe Chromium del sistema. Para usarlo sin descargar otro navegador:
+Playwright valida dist bajo `/Field/`, con Chromium móvil, Chromium escritorio y WebKit móvil. Los perfiles y datos de pruebas son aislados y ficticios. En el entorno Cloud con Chromium del sistema:
 
 ```sh
 FIELD_CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e -- --project=chromium-mobile --project=chromium-desktop --workers=2
 ```
 
-Si la caché predeterminada de npm no es escribible en un entorno aislado, agregá `--cache /tmp/field-npm-cache` a `npm ci`. La descarga de navegadores necesita acceso a los dominios oficiales de Playwright; ver las limitaciones documentadas en [VALIDACION.md](docs/VALIDACION.md).
+Si npm no puede escribir su caché predeterminada, usá `npm ci --cache /tmp/field-npm-cache`. Los resultados y limitaciones reales están en [VALIDACION.md](docs/VALIDACION.md).
 
-## Organización
+## Código y publicación
 
-```text
-src/app/          navegación, vistas y casos de uso pequeños
-src/storage/      contrato de repositorio, IndexedDB, esquema y respaldos
-src/demo/         datos ficticios del espacio separado
-src/styles/       tokens y estilos propios, claro/oscuro y móvil
-tests/            persistencia, validación y flujos de navegador
-.github/          validación y publicación en Pages
-docs/             plan, decisiones y resultados reales
-```
+- `src/modules/finance/`: cálculo puro del presupuesto y vistas.
+- `src/modules/food/`: unidades, costos, compras vinculadas y vistas.
+- `src/storage/`: contrato de repositorio, validación, migraciones, copias y transacciones.
+- `src/app/`: navegación, formularios y coordinación de casos de uso.
+- `src/shared/`: fechas de Uruguay, dinero y controles visuales.
+- `src/demo/`: datos sintéticos separados.
 
-No se crean módulos ni entidades vacías por anticipado. El diseño de compra → ingredientes → costo de receta y del único gasto vinculado está documentado en el plan y se implementará en las etapas autorizadas siguientes.
+Vite conserva `base: '/Field/'` y navegación por hash. El workflow valida main y publica dist en GitHub Pages; en PR valida sin desplegar. Pages ya usa GitHub Actions como fuente. Consultá [PUBLICACION.md](docs/PUBLICACION.md) para el estado y la ejecución.
+
+La referencia Proyecto Ahorros inspiró jerarquía de montos, semanas, formularios y fórmulas visibles; no se copió su código ni su identidad. El análisis histórico queda en [PLAN.md](docs/PLAN.md). El pedido actual autorizó esta implementación y reemplaza las restricciones de la primera etapa. Hábitos y ejercicio conservan su lugar en la visión, con navegación oculta hasta que tengan funciones reales.
