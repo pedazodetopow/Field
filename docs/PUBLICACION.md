@@ -3,13 +3,15 @@
 ## Estado comprobado
 
 - Build y TypeScript completados; Vite usa `/Field/`.
-- 20 pruebas de persistencia y 10 flujos Chromium (móvil y escritorio) pasaron en la revisión de publicación.
+- 20 pruebas de persistencia y 10 flujos Chromium (móvil y escritorio) pasaron localmente. En GitHub Actions pasó la suite completa de Chromium y WebKit, además de instalación, typecheck, build y carga del artefacto de Pages.
 - Código y workflow incorporados a `main` mediante Git, con avance directo desde el commit inicial. El push fue aceptado y se verificó el SHA remoto.
 - También existe la rama `codex/field-pages-stage1`. La creación de PR con la CLI fue bloqueada por la red; no fue necesaria para incorporar el código porque Git permitió el avance directo de `main`.
 - El workflow `.github/workflows/pages.yml` valida en push a `main`, instala las dependencias de los navegadores, construye `dist`, carga el artefacto, verifica la configuración de Pages y lo publica. En PR valida sin desplegar.
 - No se agregaron nuevas funcionalidades para la publicación.
 
-No se ha confirmado una URL pública funcionando. La API `api.github.com` está bloqueada para este proceso y el intento de consultar el dominio de Pages recibió 403 de la política de red. Eso no prueba que la aplicación esté publicada ni que esté caída. El acceso Git permitió los pushes, pero no permite consultar la ejecución de Actions.
+No se ha confirmado una URL pública funcionando. El repositorio ya es público y la API de GitHub permite consultar Actions. Pages todavía no existe (GET devuelve 404). El intento de activarlo desde Codex fue rechazado con 403 «Resource not accessible by integration». La acción oficial también requiere un token diferente de GITHUB_TOKEN para habilitar Pages automáticamente; no se agregaron secretos ni se solicitó un token nuevo.
+
+La ejecución [38442343231](https://github.com/pedazodetopow/Field/actions/runs/38442343231), sobre el commit `1f78070`, confirmó `validate` en verde y `deploy` fallando únicamente en configurar Pages por sitio inexistente. Un fallo anterior de cambio de tema del sistema en WebKit fue corregido conservando una MediaQueryList estable; la misma prueba pasó en la siguiente ejecución.
 
 ## Acción manual en GitHub
 
@@ -24,6 +26,6 @@ Ese mismo enlace HTTPS sirve para Safari en el iPhone. La URL no se confirma a p
 
 ## Comprobación desde Codex Cloud
 
-Se guardaron en el borrador del entorno los dominios `api.github.com` y `pedazodetopow.github.io`, preservando los destinos de Playwright. El guardado del borrador no cambia los permisos de red del proceso actual. Para que Codex pueda consultar Actions y comprobar el sitio, revisar y guardar ese borrador en los ajustes del entorno y publicar el entorno; eso es independiente de activar Pages en GitHub. No se necesitan nuevas credenciales para el push Git que ya funcionó.
+Se guardaron en el borrador del entorno los dominios `api.github.com` y `pedazodetopow.github.io`, preservando los destinos de Playwright. La API de GitHub y el dominio público ya son accesibles. Para descargar logs o artefactos de diagnóstico se agregaron además los destinos observados `results-receiver.actions.githubusercontent.com` y `productionresultssa12.blob.core.windows.net`; los logs siguen bloqueados en el proceso actual, por lo que el workflow expone errores en anotaciones consultables por la API. El guardado del borrador no demuestra permisos efectivos ni publicación; su activación en ajustes del entorno es independiente de habilitar Pages en GitHub. No se necesitan nuevas credenciales para el push Git que ya funcionó.
 
 Cuando el acceso esté disponible, consultar el workflow correspondiente al HEAD de `main`, comprobar ambos jobs y usar exclusivamente la URL devuelta por Pages. Validar la respuesta pública y los recursos del build antes de declarar terminada la publicación.

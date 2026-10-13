@@ -32,7 +32,7 @@ El build está preparado para el repositorio `pedazodetopow/Field`, con base `/F
 4. Si activaste Pages después de subir el código, ejecutá **Actions → Validar y publicar Field → Run workflow** en `main`.
 5. Usá la URL que devuelve el job **Publicar**. No se considera publicada hasta que el despliegue termine y la URL devuelta responda correctamente.
 
-En el iPhone, abrí esa URL HTTPS en Safari. El código y el workflow ya se incorporaron a `main` mediante un push de avance directo, sin forzar el historial. La publicación remota todavía no se pudo comprobar: el entorno bloquea la API y el dominio de Pages. Ver [estado de publicación y acción manual pendiente](docs/PUBLICACION.md).
+En el iPhone, abrí esa URL HTTPS en Safari. El código y el workflow ya se incorporaron a `main` mediante un push de avance directo, sin forzar el historial. La suite completa de navegador pasó en GitHub Actions. La publicación espera la activación manual de Pages; la integración de Codex no tiene permiso para habilitarlo. Ver [estado de publicación y acción manual pendiente](docs/PUBLICACION.md).
 
 Si cambiás el nombre del repositorio o publicás bajo otro path, ajustá `base` en `vite.config.ts`. Mantener el mismo origen público conserva el acceso a los datos locales; cambiar de dominio requiere trasladarlos con un respaldo.
 

@@ -61,3 +61,11 @@ La implementación se detiene en esta etapa. La siguiente prioridad será finanz
 ## Configuración reutilizable del entorno
 
 Se guardaron `install_script` (npm ci con caché escribible, build y pruebas) y `start_skill` (arranque, verificaciones y alcance de etapa 1), más los dominios oficiales de descarga de Playwright. Es un borrador persistido: no aplica los permisos al proceso actual ni publica el entorno. Para activarlo, revisar y guardar los cambios en ajustes del entorno, y publicar el entorno. Esto es independiente del despliegue de la aplicación en GitHub Pages.
+
+## Comprobación remota tras hacer público el repositorio
+
+GitHub Actions ejecutó correctamente instalación con lockfile, las pruebas unitarias, typecheck, build, instalación de navegadores y la suite completa de Chromium/WebKit en la ejecución 38442343231 (commit 1f78070). Se cargó el artefacto dist. El job deploy falló solamente al consultar una configuración de Pages inexistente.
+
+En una ejecución anterior WebKit detectó que el tema del sistema no actualizaba al volver a claro. Se conservó una referencia estable a MediaQueryList en la aplicación y la misma prueba pasó en la ejecución siguiente; no se omitieron ni relajaron verificaciones. El instalador y WebKit funcionan en Actions aunque falten bibliotecas locales. La prueba en iPhone físico sigue pendiente.
+
+El repositorio público no activa Pages automáticamente. La API de activación rechazó la integración con 403; falta seleccionar GitHub Actions como fuente de Pages y volver a ejecutar el workflow. Ver PUBLICACION.md.
