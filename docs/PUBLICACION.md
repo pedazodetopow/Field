@@ -2,7 +2,9 @@
 
 ## Rediseño funcional
 
-La versión funcional conserva el mismo sitio, la base `/Field/` y el workflow de Pages. Incluye Inicio operativo, Finanzas y Cocina (ingredientes, recetas, compras y preparaciones), con migración del esquema publicado. La incorporación a main activa validación completa (38 pruebas unitarias y 33 flujos Playwright de los tres proyectos) y solo publica si todos los checks pasan. La ejecución y el commit desplegado se consultan en [Actions](https://github.com/pedazodetopow/Field/actions/workflows/pages.yml). El resultado remoto de la entrega se documenta al comprobar el sitio.
+**Publicado y comprobado:** https://pedazodetopow.github.io/Field/. La ejecución [38449526421](https://github.com/pedazodetopow/Field/actions/runs/38449526421), sobre `95e3532`, terminó con validate y deploy en success. Sus logs confirman 38 pruebas unitarias y 33 pruebas Playwright aprobadas. El HTML, CSS, JS e ícono públicos respondieron HTTP 200, con TLS válido y hashes SHA-256 iguales al build local validado.
+
+La versión funcional conserva el mismo sitio, la base `/Field/` y el workflow de Pages. Incluye Inicio operativo, Finanzas y Cocina (ingredientes, recetas, compras y preparaciones), con migración del esquema publicado. La incorporación a main activa validación completa (38 pruebas unitarias y 33 flujos Playwright de los tres proyectos) y solo publica si todos los checks pasan. La ejecución y el commit desplegado se consultan en [Actions](https://github.com/pedazodetopow/Field/actions/workflows/pages.yml). El resultado remoto de la entrega está comprobado en la ejecución enlazada arriba.
 
 ## Historial: primera publicación
 

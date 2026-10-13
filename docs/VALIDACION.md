@@ -9,7 +9,9 @@
 - La primera corrida detectó etiquetas de selectores ambiguas y reimportación del mismo archivo tras cancelar. Se corrigieron nombres accesibles y limpieza del input; las pruebas afectadas y la suite completa pasaron después.
 - El ejemplo requerido pasó: 400 g de pollo a $ 350/kg = $ 140; cuatro porciones = $ 35 cada una. Los ingresos, ahorro, semanas parciales, déficits, centésimos y cambios de período tienen pruebas.
 - Se conservó el test significativo de falta de espacio: una escritura abortada no guarda un reemplazo ni una copia parcial. La migración 1→2 también fue ejercitada en IndexedDB real del navegador.
-- WebKit y despliegue de esta versión: el workflow ejecutará la suite completa antes de publicar; el resultado remoto se registra en PUBLICACION.md. No se afirma prueba física en iPhone.
+- GitHub Actions ejecutó la suite completa: **38 pruebas unitarias y 33 flujos Playwright pasaron** (Chromium móvil, Chromium escritorio y WebKit móvil), sin omitidos. Validate y deploy terminaron en success en la ejecución 38449526421, commit 95e3532.
+- La nueva versión pública respondió HTTP 200 con TLS válido; HTML, CSS, JS e ícono coinciden por SHA-256 con dist. No se afirma una prueba física en iPhone ni una comprobación dinámica pública en el navegador de Cloud con su CA de proxy. Los flujos de interfaz completos sí se ejecutaron en Actions.
+- Se guardaron instrucciones de arranque actualizadas en el borrador del entorno Cloud para reemplazar el alcance antiguo de etapa 1. Ese borrador se revisa y publica en ajustes del entorno; es independiente del sitio de Pages, que ya quedó desplegado.
 
 ## Historial: etapa 1
 
