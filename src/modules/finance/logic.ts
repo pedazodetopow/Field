@@ -26,7 +26,13 @@ export function distribute(cents: number, days: number): number[] {
     (_, i) => each + (i < Math.abs(rest) ? Math.sign(rest) : 0),
   );
 }
-export function budget(period: Period, movements: Movement[], date: string) {
+export function budget(
+  period: Period,
+  movements: Movement[],
+  date: string,
+  fixedReserve = 0,
+  paidFixed = new Set<string>(),
+) {
   const relevant = movements.filter(
     (m) => m.periodId === period.id && m.date <= date,
   );
@@ -37,9 +43,15 @@ export function budget(period: Period, movements: Movement[], date: string) {
     .filter((m) => m.type === "expense")
     .reduce((s, m) => s + m.cents, 0);
   const balance = period.initialCents + income - spent,
-    available = balance - period.savingsCents;
+    available =
+      balance -
+      period.savingsCents -
+      fixedReserve +
+      relevant
+        .filter((m) => paidFixed.has(m.id))
+        .reduce((s, m) => s + m.cents, 0);
   const allocation = distribute(
-    period.initialCents - period.savingsCents,
+    period.initialCents - period.savingsCents - fixedReserve,
     daysBetween(period.start, period.payday),
   );
   const weeks: Week[] = [];
@@ -56,7 +68,7 @@ export function budget(period: Period, movements: Movement[], date: string) {
         .filter((m) => m.type === "income")
         .reduce((s, m) => s + m.cents, 0),
       weeklySpent = rows
-        .filter((m) => m.type === "expense")
+        .filter((m) => m.type === "expense" && !paidFixed.has(m.id))
         .reduce((s, m) => s + m.cents, 0);
     const remaining = base + carry + weeklyIncome - weeklySpent;
     weeks.push({

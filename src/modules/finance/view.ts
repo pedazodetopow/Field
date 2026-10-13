@@ -1,4 +1,6 @@
-import { activePeriod, budget, periodMovements, type Week } from "./logic";
+import { financialSummary } from "./planning";
+import { receipt, fixedPanel, goalsPanel, projectionPanel } from "./panels";
+import { activePeriod, periodMovements, type Week } from "./logic";
 import { amount, button, icon, stat } from "../../shared/ui";
 import { dateLabel, esc, money, today } from "../../shared/values";
 import type { Data, Movement } from "../../storage/model";
@@ -19,40 +21,63 @@ export function weekRows(weeks: Week[], date: string) {
     )
     .join("");
 }
-export function financeView(data: Data) {
+export function financeView(data: Data, tab = "plan") {
   const period = activePeriod(data),
     date = today();
-  const header = `<div class="page-heading"><div><span class="eyebrow">PRESUPUESTO PERSONAL</span><h1>Finanzas</h1></div>${button(icon("plus") + " Movimiento", "movement")}</div>`;
-  if (!period)
-    return (
-      header +
-      `<section class="empty-setup"><h2>Configurá tu primer período</h2><p>Indicá cuánto tenés hoy, cuánto querés reservar y la fecha del próximo cobro.</p>${button("Configurar presupuesto", "period")}</section>`
-    );
-  const calc = budget(period, data.movements, date),
+  const header = `<div class="page-heading"><div><h1>Finanzas</h1><p>Presupuesto, movimientos y ahorro.</p></div>${button(icon("plus") + " Movimiento", "movement")}</div>`;
+  const tabs = `<nav class="finance-tabs" aria-label="Secciones de finanzas">${[
+    ["plan", "Presupuesto"],
+    ["movimientos", "Movimientos"],
+    ["fijos", "Fijos"],
+    ["metas", "Metas"],
+    ["proyeccion", "Proyección"],
+  ]
+    .map(
+      ([key, label]) =>
+        `<a href="#finanzas/${key}" ${key === tab ? 'aria-current="page"' : ""}>${label}</a>`,
+    )
+    .join("")}</nav>`;
+  if (!period && tab !== "metas")
+    return `<div class="finance-workspace">${header}${tabs}<section class="finance-panel first-budget"><h2>Configurá tu primer período</h2><p>Indicá cuánto tenés, cuánto querés reservar y cuándo cobrás.</p>${button("Configurar presupuesto", "period")}</section></div>`;
+  if (tab === "metas")
+    return `<div class="finance-workspace">${header}${tabs}${goalsPanel(data)}</div>`;
+  const p = period!,
+    calc = financialSummary(data, p, date),
     rows = periodMovements(data);
-  const categories = new Map<string, number>();
+  const top = `<div class="period-bar"><span>${dateLabel(p.start)} → ${dateLabel(p.payday)} <b>${calc.active ? calc.daysLeft + " días hasta cobrar" : date < p.start ? "Todavía no empezó" : "Período terminado"}</b></span><div>${button("Ajustar", "period", "text", `data-id="${p.id}"`)}${button("Nuevo período", "period", "text")}</div></div>`;
+  const stats = `<div class="metrics">${stat("Saldo calculado", amount(calc.balance), "Inicial + ingresos − gastos")}${stat("Disponible", amount(calc.available), "Sin ahorro ni fijos pendientes")}${stat("Esta semana", calc.current ? amount(calc.current.remaining) : "—", "Con arrastre de la anterior")}${stat("Hoy podés gastar", calc.todayAvailable === null ? "—" : amount(calc.todayAvailable), "Cuota diaria menos gastos de hoy")}</div>`;
+  const movements = `<section class="finance-panel"><div class="section-title"><h2>Movimientos</h2><span class="subtle">${rows.length} registros</span></div><div class="filter-row"><label>Buscar<input id="movement-search" type="search" placeholder="Descripción o categoría"></label><label>Tipo<select id="movement-type"><option value="all">Todos</option><option value="expense">Gastos</option><option value="income">Ingresos</option></select></label></div><div id="movement-list">${rows.length ? movementRows(rows) : '<p class="empty-message">Anotá tu primer movimiento.</p>'}</div></section>`;
+  const cats = new Map<string, number>();
   rows
     .filter((m) => m.type === "expense" && m.date <= date)
     .forEach((m) =>
-      categories.set(m.category, (categories.get(m.category) || 0) + m.cents),
+      cats.set(m.category, (cats.get(m.category) || 0) + m.cents),
     );
-  return (
-    header +
-    `<div class="period-bar"><span>${dateLabel(period.start)} → ${dateLabel(period.payday)} <b>${calc.active ? calc.daysLeft + " días hasta cobrar" : date < period.start ? "Todavía no empezó" : "Período terminado"}</b></span><div>${button("Ajustar", "period", "text", `data-id="${period.id}"`)}${button("Nuevo período", "period", "text")}</div></div>
- <div class="metrics">${stat("Saldo real", amount(calc.balance), "Inicial + ingresos − gastos")}${stat("Disponible", amount(calc.available), "Saldo − ahorro reservado")}${stat("Ahorro reservado", amount(calc.savings), "Objetivo de este período")}${stat("Referencia por día", calc.periodDaily === null ? "—" : amount(calc.periodDaily), "Disponible ÷ días hasta cobrar")}</div>
- <div class="finance-columns"><section class="panel"><div class="section-title"><h2>Presupuesto por semanas</h2><span class="subtle">${calc.weeks.length} semanas</span></div>${weekRows(calc.weeks, date)}<details class="calculation"><summary>Cómo se calcula</summary><p>El saldo inicial menos el ahorro se reparte por los días del período. Los centésimos sobrantes van a los primeros días. Cada semana recibe su parte, el arrastre de la anterior y los ingresos registrados en esa semana; se restan sus gastos. El cobro no se incluye. Los saldos negativos se conservan. Las semanas futuras son proyecciones con los movimientos registrados hasta hoy; su arrastre cambia cuando anotás nuevos movimientos.</p><p>Disponible hoy: ${money(period.initialCents)} + ${money(calc.income)} − ${money(calc.spent)} − ${money(calc.savings)} = <strong>${money(calc.available)}</strong>.</p></details></section>
- <section class="panel"><div class="section-title"><h2>Gastos por categoría</h2><span class="subtle">${money(calc.spent)}</span></div>${
-   categories.size
-     ? [...categories]
-         .sort((a, b) => b[1] - a[1])
-         .map(
-           ([name, total]) =>
-             `<div class="category-row"><span>${esc(name)}</span>${amount(total)}<div class="meter"><i style="width:${calc.spent ? (total / calc.spent) * 100 : 0}%"></i></div></div>`,
-         )
-         .join("")
-     : `<p class="empty-message">No hay gastos en este período.</p>${button("Anotar gasto", "movement", "secondary")}`
- }<div class="total-row"><span>Ingresos adicionales</span>${amount(calc.income, "positive")}</div></section></div>
- <section class="panel"><div class="section-title"><h2>Movimientos</h2><span class="subtle">${rows.length} registros</span></div><div class="filter-row"><label>Buscar<input id="movement-search" type="search" placeholder="Descripción o categoría"></label><label>Tipo<select id="movement-type"><option value="all">Todos</option><option value="expense">Gastos</option><option value="income">Ingresos</option></select></label></div><div id="movement-list">${rows.length ? movementRows(rows) : '<p class="empty-message">Anotá tu primer movimiento.</p>'}</div></section>
- ${data.periods.length > 1 ? `<section class="panel history"><div class="section-title"><h2>Períodos guardados</h2></div>${data.periods.map((p) => button(`${dateLabel(p.start)} — ${dateLabel(p.payday)}`, "switch-period", p.id === period.id ? "secondary selected" : "secondary", `data-id="${p.id}"`)).join("")}</section>` : ""}`
-  );
+  const categoryPanel = `<section class="finance-panel"><div class="section-title"><h2>En qué gastaste</h2><span class="subtle">${money(calc.spent)}</span></div>${
+    [...cats]
+      .sort((a, b) => b[1] - a[1])
+      .map(
+        ([name, total]) =>
+          `<div class="category-row"><span>${esc(name)}</span>${amount(total)}<div class="meter"><i style="width:${(total / calc.spent) * 100}%"></i></div></div>`,
+      )
+      .join("") ||
+    '<p class="empty-message">Las categorías aparecen al registrar tus gastos.</p>'
+  }<div class="total-row"><span>Ingresos adicionales</span>${amount(calc.income, "positive")}</div></section>`;
+  const check = calc.check
+    ? `<section class="finance-panel balance-check"><div class="section-title"><h2>Último saldo real comprobado</h2>${button("Comprobar de nuevo", "balance-check", "text")}</div><strong>${amount(calc.check.actualCents)}</strong><p>${dateLabel(calc.check.date)} · Calculado al comprobar: ${money(calc.check.calculatedCents)} · Diferencia: ${money(calc.check.actualCents - calc.check.calculatedCents)}.</p><small>Foto del momento de la comprobación. Los movimientos posteriores actualizan el saldo calculado.</small></section>`
+    : "";
+  const weeks = `<section class="finance-panel"><div class="section-title"><h2>Semana por semana</h2><span class="subtle">${calc.weeks.length} semanas</span></div>${weekRows(calc.weeks, date)}<details class="calculation"><summary>Cómo se calcula</summary><p>El saldo inicial, menos ahorro y fijos (pagados o pendientes), se reparte en días exactos. Cada semana suma arrastre e ingresos y resta gastos variables. Pagar un fijo ya reservado no lo descuenta otra vez. Los centésimos sobrantes van a los primeros días. Las semanas futuras son proyecciones. El día de cobro queda fuera.</p><p>Hoy: cuota de lo que queda de semana antes de los gastos de hoy, menos lo gastado hoy. Los saldos negativos se muestran completos.</p></details></section>`;
+  const content =
+    tab === "fijos"
+      ? fixedPanel(data, calc)
+      : tab === "proyeccion"
+        ? projectionPanel(calc, p)
+        : tab === "movimientos"
+          ? `<div class="finance-ledger">${movements}<div>${categoryPanel}${check}</div></div>`
+          : `${stats}<div class="finance-two">${weeks}<div>${receipt(calc, p)}${categoryPanel}${check}</div></div>${movements}`;
+  const history =
+    data.periods.length > 1
+      ? `<section class="finance-panel history"><h2>Períodos guardados</h2>${data.periods.map((old) => button(`${dateLabel(old.start)} — ${dateLabel(old.payday)}`, "switch-period", old.id === p.id ? "secondary selected" : "secondary", `data-id="${old.id}"`)).join("")}</section>`
+      : "";
+  return `<div class="finance-workspace">${header}${top}${tabs}${content}${history}</div>`;
 }

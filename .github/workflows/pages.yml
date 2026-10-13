@@ -28,6 +28,17 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
+      - name: Capturas financieras de escritorio y móvil
+        run: node scripts/capture-finance.mjs
+        env:
+          FIELD_SCREENSHOT_DIR: test-results/capturas
+      - name: Conservar capturas verificables
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-finanzas
+          path: test-results/capturas/
+          retention-days: 14
       - name: Mostrar los errores de navegador en el resumen de Actions
         if: failure()
         run: node scripts/report-test-errors.mjs

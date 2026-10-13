@@ -1,4 +1,6 @@
 import "../styles/app.css";
+import "../styles/finance.css";
+import { payFixed, savingsFromPercent } from "../modules/finance/planning";
 import { createRepository, type Repository } from "../storage/repository";
 import {
   exportBackup,
@@ -15,7 +17,14 @@ import { activePeriod, periodMovements } from "../modules/finance/logic";
 import { financeView, movementRows } from "../modules/finance/view";
 import { kitchenView, type KitchenTab } from "../modules/food/view";
 import { recipeCost } from "../modules/food/logic";
-import { today, esc, money, parseMoney, type Unit } from "../shared/values";
+import {
+  today,
+  esc,
+  money,
+  parseMoney,
+  uid,
+  type Unit,
+} from "../shared/values";
 import { icon, button, input, select, unitOptions } from "../shared/ui";
 import {
   formSpec,
@@ -105,15 +114,35 @@ async function action(fn: () => Promise<void>) {
     controls.forEach((c) => (c.disabled = false));
   }
 }
-async function commit(change: (data: Data) => void, message: string) {
+let undo: { data: Data; revision: number; space: Space } | undefined;
+async function commit(
+  change: (data: Data) => void,
+  message: string,
+  reversible = false,
+) {
+  const before = structuredClone(state.data);
   const next = structuredClone(state.data);
   change(next);
   state = await repository.save(next, state.revision);
+  undo = reversible
+    ? { data: before, revision: state.revision, space }
+    : undefined;
   announce(message);
+  if (undo) {
+    notification.insertAdjacentHTML(
+      "beforeend",
+      button("Deshacer", "undo", "text"),
+    );
+    window.clearTimeout(noticeTimer);
+    noticeTimer = window.setTimeout(() => {
+      notification.hidden = true;
+      undo = undefined;
+    }, 15000);
+  }
 }
 function settingsView() {
   const data = state.data;
-  return `<div class="page-heading"><div><span class="eyebrow">DATOS Y PREFERENCIAS</span><h1>Ajustes y respaldos</h1></div></div><div class="settings-grid"><section class="panel"><h2>Preferencias</h2><form id="profile-form">${input("¿Cómo querés que te llamemos?", "displayName", data.profile.displayName, "text", 'maxlength="60" autocomplete="nickname"')}${button("Guardar nombre", "save-profile", "primary", 'type="submit"')}</form>${select("Apariencia", "theme", `<option value="system">Según el dispositivo</option><option value="light">Claro</option><option value="dark">Oscuro</option>`)}<p class="footnote">Pesos uruguayos · America/Montevideo</p><div class="divider"></div><h3>Almacenamiento local</h3><p>Los datos se guardan en este navegador. Otro dispositivo tiene su propio espacio. Exportá un archivo para trasladarlos o recuperarlos.</p>${button("Solicitar almacenamiento persistente", "persist", "secondary small")}</section><section class="panel"><h2>Respaldo completo</h2><p>Incluye presupuestos, movimientos, ingredientes, recetas, compras, preparaciones y preferencias de este espacio.</p><div class="backup-actions">${button(icon("download") + " Exportar respaldo", "export", "primary")}<label class="field"><span>Importar un respaldo JSON</span><input id="import-file" type="file" accept="application/json,.json"></label></div><p class="footnote">Hasta 2 MB. El archivo se valida antes de reemplazar datos; se crea una copia previa. Los archivos no están cifrados.</p><div class="divider"></div><h3>Copias automáticas</h3><p class="footnote">Las últimas cinco copias, antes de importar, restaurar o migrar.</p><div id="snapshots">Cargando copias…</div></section></div>`;
+  return `<div class="page-heading"><div><span class="eyebrow">DATOS Y PREFERENCIAS</span><h1>Ajustes y respaldos</h1></div></div><div class="settings-grid"><section class="panel"><h2>Preferencias</h2><form id="profile-form">${input("¿Cómo querés que te llamemos?", "displayName", data.profile.displayName, "text", 'maxlength="60" autocomplete="nickname"')}${button("Guardar nombre", "save-profile", "primary", 'type="submit"')}</form>${select("Apariencia", "theme", `<option value="system">Según el dispositivo</option><option value="light">Claro</option><option value="dark">Oscuro</option>`)}<p class="footnote">Pesos uruguayos · America/Montevideo</p><div class="divider"></div><h3>Almacenamiento local</h3><p>Los datos se guardan en este navegador. Otro dispositivo tiene su propio espacio. Exportá un archivo para trasladarlos o recuperarlos.</p>${button("Solicitar almacenamiento persistente", "persist", "secondary small")}</section><section class="panel"><h2>Respaldo completo</h2><p>Incluye presupuestos, movimientos, fijos, pagos, metas, comprobaciones, proyecciones, ingredientes, recetas, compras, preparaciones y preferencias de este espacio.</p><div class="backup-actions">${button(icon("download") + " Exportar respaldo", "export", "primary")}<label class="field"><span>Importar un respaldo JSON</span><input id="import-file" type="file" accept="application/json,.json"></label></div><p class="footnote">Hasta 2 MB. El archivo se valida antes de reemplazar datos; se crea una copia previa. Los archivos no están cifrados.</p><div class="divider"></div><h3>Copias automáticas</h3><p class="footnote">Las últimas cinco copias, antes de importar, restaurar o migrar.</p><div id="snapshots">Cargando copias…</div></section></div>`;
 }
 async function render() {
   applyTheme();
@@ -131,7 +160,37 @@ async function render() {
     cocina: "food",
     ajustes: "settings",
   } as const;
-  app.innerHTML = `<a class="skip-link" href="#main">Saltar al contenido</a><header class="app-header"><a href="#inicio" class="brand"><span class="brand-mark">f.</span>field<span class="brand-label">PERSONAL</span></a><nav aria-label="Navegación principal">${keys.map((key) => `<a href="#${key}" aria-label="${labels[key]}" ${current === key ? 'aria-current="page"' : ""}>${icon(glyph[key])}<span>${key === "ajustes" ? "Ajustes" : labels[key]}</span></a>`).join("")}</nav><div class="header-tools"><span class="profile-name">${esc(state.data.profile.displayName)}</span>${button(space === "demo" ? "Volver a mis datos" : "Explorar demo", "switch-space", "compact")}</div></header>${space === "demo" ? `<div class="demo-banner"><span><strong>Demo ficticia</strong> · Base separada. Tus datos personales no cambian.</span>${button("Cargar demo completa", "reset-demo", "text")}</div>` : ""}<main id="main" tabindex="-1">${current === "inicio" ? homeView(state.data) : current === "finanzas" ? financeView(state.data) : current === "cocina" ? kitchenView(state.data, kitchenTab()) : settingsView()}</main><footer><span>UYU · Datos en este dispositivo</span><a href="#ajustes">Exportar y respaldar ${icon("arrow")}</a></footer>`;
+  app.innerHTML = `<a class="skip-link" href="#main">Saltar al contenido</a><header class="app-header"><a href="#inicio" class="brand"><span class="brand-mark">f.</span>field<span class="brand-label">PERSONAL</span></a><nav aria-label="Navegación principal">${keys.map((key) => `<a href="#${key}" aria-label="${labels[key]}" ${current === key ? 'aria-current="page"' : ""}>${icon(glyph[key])}<span>${key === "ajustes" ? "Ajustes" : labels[key]}</span></a>`).join("")}</nav><div class="header-tools"><span class="profile-name">${esc(state.data.profile.displayName)}</span>${button(space === "demo" ? "Volver a mis datos" : "Explorar demo", "switch-space", "compact")}</div></header>${space === "demo" ? `<div class="demo-banner"><span><strong>Demo ficticia</strong> · Base separada. Tus datos personales no cambian.</span>${button("Cargar demo completa", "reset-demo", "text")}</div>` : ""}<main id="main" tabindex="-1">${current === "inicio" ? homeView(state.data) : current === "finanzas" ? financeView(state.data, ["plan", "movimientos", "fijos", "metas", "proyeccion"].includes(location.hash.split("/")[1]) ? location.hash.split("/")[1] : "plan") : current === "cocina" ? kitchenView(state.data, kitchenTab()) : settingsView()}</main><footer><span>UYU · Datos en este dispositivo</span><a href="#ajustes">Exportar y respaldar ${icon("arrow")}</a></footer>`;
+  app.dataset.section = current;
+  const quick = app.querySelector<HTMLFormElement>("#quick-expense");
+  quick?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const form = new FormData(quick);
+    void action(async () => {
+      await commit(
+        (d) => {
+          const period = activePeriod(d);
+          if (!period) throw new Error("Configurá el presupuesto primero.");
+          d.movements.push({
+            id: uid(),
+            periodId: period.id,
+            type: "expense",
+            date: today(),
+            cents: parseMoney(String(form.get("cents"))),
+            category: String(form.get("category")),
+            description: String(form.get("description")).trim(),
+            purchaseId: null,
+          });
+        },
+        "Gasto registrado.",
+        true,
+      );
+      await render();
+      app
+        .querySelector<HTMLInputElement>('#quick-expense [name="cents"]')
+        ?.focus();
+    });
+  });
   document.title = labels[current] + " · Field";
   if (current === "ajustes") {
     const theme = app.querySelector<HTMLSelectElement>('[name="theme"]')!;
@@ -192,6 +251,19 @@ async function render() {
   }
 }
 function editorShell(title: string, content: string, save = "Guardar") {
+  editor.classList.toggle(
+    "financial-editor",
+    !!editing &&
+      [
+        "period",
+        "movement",
+        "fixed",
+        "goal",
+        "contribution",
+        "balance-check",
+        "forecast",
+      ].includes(editing),
+  );
   editor.innerHTML = `<div class="editor-heading"><h2>${title}</h2><button type="button" class="icon-button" data-action="close-editor" aria-label="Cerrar formulario">${icon("close")}</button></div><form id="editor-form">${content}<p id="form-error" class="form-error" role="alert"></p><div class="editor-footer"><button type="button" class="button secondary" data-action="close-editor">Cancelar</button><button type="submit" class="button primary">${save}</button></div></form>`;
   editor.showModal();
   editor
@@ -206,7 +278,7 @@ function openEditor(
 ) {
   if (busy) return;
   if (
-    (kind === "movement" || kind === "purchase") &&
+    ["movement", "purchase", "balance-check", "forecast"].includes(kind) &&
     !id &&
     !activePeriod(state.data)
   ) {
@@ -241,6 +313,15 @@ function openEditor(
       await commit(
         (d) => spec.submit(d, form),
         "Guardado en este dispositivo.",
+        [
+          "period",
+          "movement",
+          "fixed",
+          "goal",
+          "contribution",
+          "balance-check",
+          "forecast",
+        ].includes(kind),
       );
       editor.close();
       await render();
@@ -270,6 +351,37 @@ function openEditor(
           String(recipe.portions);
       }
     });
+  const percent = editor.querySelector<HTMLInputElement>(
+    '[name="savingsPercent"]',
+  );
+  const initial = editor.querySelector<HTMLInputElement>(
+    '[name="initialCents"]',
+  );
+  const reserve = editor.querySelector<HTMLInputElement>(
+    '[name="savingsCents"]',
+  );
+  const updateSavings = () => {
+    if (!percent?.value || !initial || !reserve) return;
+    try {
+      reserve.value = (
+        savingsFromPercent(parseMoney(initial.value), percent.value) / 100
+      ).toFixed(2);
+      percent.setCustomValidity("");
+    } catch (e) {
+      percent.setCustomValidity((e as Error).message);
+    }
+  };
+  percent?.addEventListener("input", () => {
+    percent.setCustomValidity("");
+    updateSavings();
+  });
+  initial?.addEventListener("input", updateSavings);
+  reserve?.addEventListener("input", () => {
+    if (percent) {
+      percent.value = "";
+      percent.setCustomValidity("");
+    }
+  });
   updateCostPreview();
 }
 function updateCostPreview() {
@@ -343,13 +455,14 @@ function openRestore(data: Data, reason: string) {
   editing = undefined;
   editorShell(
     "Revisá antes de restaurar",
-    `<div class="restore-summary"><strong>${space === "demo" ? "Demo ficticia" : "Espacio personal"}</strong><p>Nombre: ${esc(data.profile.displayName || "Sin nombre")}</p><dl><div><dt>Períodos</dt><dd>${data.periods.length}</dd></div><div><dt>Movimientos</dt><dd>${data.movements.length}</dd></div><div><dt>Ingredientes</dt><dd>${data.ingredients.length}</dd></div><div><dt>Recetas</dt><dd>${data.recipes.length}</dd></div><div><dt>Compras</dt><dd>${data.purchases.length}</dd></div><div><dt>Preparaciones</dt><dd>${data.preparations.length}</dd></div></dl></div><p class="form-note">Reemplazará este espacio. Conservamos una copia de los datos actuales antes de restaurar.</p>`,
+    `<div class="restore-summary"><strong>${space === "demo" ? "Demo ficticia" : "Espacio personal"}</strong><p>Nombre: ${esc(data.profile.displayName || "Sin nombre")}</p><dl><div><dt>Períodos</dt><dd>${data.periods.length}</dd></div><div><dt>Movimientos</dt><dd>${data.movements.length}</dd></div><div><dt>Fijos / metas</dt><dd>${data.finance.fixed.length} / ${data.finance.goals.length}</dd></div><div><dt>Ingredientes</dt><dd>${data.ingredients.length}</dd></div><div><dt>Recetas</dt><dd>${data.recipes.length}</dd></div><div><dt>Compras</dt><dd>${data.purchases.length}</dd></div><div><dt>Preparaciones</dt><dd>${data.preparations.length}</dd></div></dl></div><p class="form-note">Reemplazará este espacio. Conservamos una copia de los datos actuales antes de restaurar.</p>`,
     "Confirmar reemplazo",
   );
   editor.querySelector("#editor-form")!.addEventListener("submit", (event) => {
     event.preventDefault();
     void action(async () => {
       state = await repository.replace(data, state.revision, reason);
+      undo = undefined;
       editor.close();
       announce("Datos restaurados. La copia anterior quedó guardada.");
       await render();
@@ -408,6 +521,7 @@ async function switchSpace() {
   const nextSpace = space === "personal" ? "demo" : "personal",
     nextRepository = createRepository(nextSpace),
     next = await nextRepository.load();
+  undo = undefined;
   space = nextSpace;
   repository = nextRepository;
   state = next;
@@ -420,6 +534,11 @@ async function switchSpace() {
   await render();
 }
 const editorKinds = [
+  "fixed",
+  "goal",
+  "contribution",
+  "balance-check",
+  "forecast",
   "period",
   "movement",
   "ingredient",
@@ -454,6 +573,39 @@ document.addEventListener("click", (event) => {
   if (busy) return;
   if (editorKinds.includes(kind)) {
     openEditor(kind as EditorKind, id, target.dataset.recipe);
+    return;
+  }
+  if (kind === "show-payment") {
+    openEditor("movement", id);
+    return;
+  }
+  if (kind === "undo") {
+    void action(async () => {
+      if (!undo || undo.space !== space || undo.revision !== state.revision)
+        throw new Error("Este cambio ya no puede deshacerse.");
+      state = await repository.save(undo.data, state.revision);
+      undo = undefined;
+      announce("Cambio deshecho.");
+      await render();
+    });
+    return;
+  }
+  if (kind === "pay-fixed") {
+    const fixed = state.data.finance.fixed.find((f) => f.id === id);
+    if (
+      fixed &&
+      confirm(
+        `¿Registrar el pago de ${fixed.name} por ${money(fixed.cents)} con fecha de hoy?`,
+      )
+    )
+      void action(async () => {
+        await commit(
+          (d) => payFixed(d, id!, target.dataset.date!, today()),
+          "Pago registrado una sola vez.",
+          true,
+        );
+        await render();
+      });
     return;
   }
   if (kind === "switch-space") {
@@ -523,6 +675,12 @@ document.addEventListener("click", (event) => {
         await commit(
           (d) => deleteEntity(d, kind.slice(7), id),
           "Registro eliminado.",
+          [
+            "delete-movement",
+            "delete-purchase",
+            "delete-fixed",
+            "delete-goal",
+          ].includes(kind),
         );
         await render();
       });

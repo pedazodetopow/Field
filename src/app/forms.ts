@@ -1,3 +1,5 @@
+import { financialForm } from "../modules/finance/forms";
+import { removeFinancialMovement } from "../modules/finance/planning";
 import type {
   Data,
   Ingredient,
@@ -34,6 +36,11 @@ import {
   icon,
 } from "../shared/ui";
 export type EditorKind =
+  | "fixed"
+  | "goal"
+  | "contribution"
+  | "balance-check"
+  | "forecast"
   | "period"
   | "movement"
   | "ingredient"
@@ -90,11 +97,13 @@ export function formSpec(
   id?: string,
   recipeId?: string,
 ): FormSpec {
+  const finance = financialForm(kind, data, id);
+  if (finance) return finance;
   if (kind === "period") {
     const old = data.periods.find((p) => p.id === id);
     return {
       title: old ? "Ajustar presupuesto" : "Configurar un período",
-      html: `<p class="form-note">Saldo al inicio del período, antes de sus movimientos. Reservar ahorro reduce el presupuesto disponible, sin crear un gasto.</p><div class="form-grid">${moneyField("Saldo inicial", "initialCents", old?.initialCents ?? 0)}${moneyField("Ahorro a reservar", "savingsCents", old?.savingsCents ?? 0)}${input("Fecha de inicio", "start", old?.start ?? today(), "date", "required")}${input("Próximo cobro", "payday", old?.payday ?? addDays(today(), 30), "date", "required")}</div>${old ? "" : '<p class="form-note">Los períodos anteriores y sus movimientos se conservan. El nuevo saldo se confirma manualmente; no se supone un ingreso al cobrar.</p>'}`,
+      html: `<p class="form-note">Saldo al inicio del período, antes de sus movimientos. Reservar ahorro reduce el presupuesto disponible, sin crear un gasto.</p><div class="form-grid">${moneyField("Saldo inicial", "initialCents", old?.initialCents ?? 0)}${moneyField("Ahorro a reservar", "savingsCents", old?.savingsCents ?? 0)}${input("Calcular ahorro por porcentaje", "savingsPercent", "", "text", 'inputmode="decimal" placeholder="Ej.: 20"')}<p class="form-note">Opcional: el porcentaje se aplica al saldo inicial y completa el monto a reservar.</p>${input("Fecha de inicio", "start", old?.start ?? today(), "date", "required")}${input("Próximo cobro", "payday", old?.payday ?? addDays(today(), 30), "date", "required")}</div>${old ? "" : '<p class="form-note">Los períodos anteriores y sus movimientos se conservan. El nuevo saldo se confirma manualmente; no se supone un ingreso al cobrar.</p>'}`,
       submit(next, form) {
         const period: Period = {
           id: old?.id ?? uid(),
@@ -140,6 +149,13 @@ export function formSpec(
           description: value(form, "description").trim(),
           purchaseId: null,
         };
+        if (
+          next.finance.payments.some((p) => p.movementId === movement.id) &&
+          movement.type !== "expense"
+        )
+          throw new Error(
+            "Un pago fijo debe seguir siendo un gasto. Eliminá el pago para volver a dejar el vencimiento pendiente.",
+          );
         upsert(next.movements, movement);
       },
     };
@@ -237,8 +253,12 @@ export function deleteEntity(data: Data, kind: string, id: string) {
   if (kind === "movement") {
     const m = data.movements.find((m) => m.id === id);
     if (m?.purchaseId) removePurchase(data, m.purchaseId);
-    else data.movements = data.movements.filter((m) => m.id !== id);
+    else removeFinancialMovement(data, id);
   }
+  if (kind === "fixed")
+    data.finance.fixed = data.finance.fixed.filter((f) => f.id !== id);
+  if (kind === "goal")
+    data.finance.goals = data.finance.goals.filter((g) => g.id !== id);
   if (kind === "purchase") removePurchase(data, id);
   if (kind === "ingredient") removeIngredient(data, id);
   if (kind === "recipe") removeRecipe(data, id);

@@ -2,11 +2,13 @@
 
 ## Alcance y forma de trabajo
 
+- Alcance vigente: foco exclusivo en Inicio, Finanzas y su experiencia visual. Cocina, ejercicio y hábitos pausados; conservar datos y flujos de Cocina. Autorizadas implementación, pruebas y publicación de este rediseño financiero.
+- Para cambios de finanzas aplicar `.agents/skills/field-finance/SKILL.md` y para navegador `.agents/skills/frontend-testing-debugging/SKILL.md`.
+
 - Producto: herramienta personal para Uruguay, en español rioplatense, con finanzas, alimentación, actividad y hábitos.
-- Alcance vigente autorizado: rediseño integral y primera versión funcional de finanzas y cocina/meal prep, incluidos ingresos, ahorro, semanas, compras vinculadas, recetas y preparaciones. Implementar, probar y publicar en main sin pedir otra aprobación para comenzar. La instrucción actual del usuario reemplaza el límite anterior de etapa 1.
 - Evitar pantallas de próximamente, frases promocionales y navegación sin funciones. Hábitos y ejercicio siguen en la visión, con navegación oculta hasta implementarlos.
 - No borrar datos existentes. Migrar el esquema publicado y conservar copias previas; mantener importación/exportación y demo en una base físicamente separada.
-- Priorizar una versión pequeña y utilizable. Finanzas y alimentación son prioritarias; actividad y hábitos pueden llegar después.
+- Prioridad actual exclusiva: Finanzas y su experiencia visual. Conservar alimentación sin ampliarla.
 - Conservar GitHub Pages y la base /Field/ y documentar acceso por navegador e iPhone. Ejecutar pruebas y registrar resultados en `docs/VALIDACION.md` al cerrar cada etapa.
 - Implementar solo el alcance aprobado. Las funcionalidades futuras no son requisitos del MVP.
 - Usar el checkout existente: las tareas en la nube ya están aisladas. No crear worktrees salvo pedido explícito.

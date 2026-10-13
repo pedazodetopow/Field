@@ -307,7 +307,7 @@ describe("costos, compras y preparaciones", () => {
       settings: { ...current.settings, theme: "dark" },
     };
     const migrated = migrateData(legacy);
-    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.schemaVersion).toBe(3);
     expect(migrated.profile).toEqual(legacy.profile);
     expect(migrated.settings).toEqual(legacy.settings);
     expect(migrated.id).toBe(legacy.id);

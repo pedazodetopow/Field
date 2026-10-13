@@ -54,8 +54,52 @@ export interface Preparation {
   remaining: number;
   costPerPortionCents: number;
 }
+export interface FixedExpense {
+  id: string;
+  name: string;
+  cents: number;
+  category: string;
+  day: number;
+  start: string;
+  end: string | null;
+}
+export interface FixedPayment {
+  id: string;
+  fixedId: string;
+  dueDate: string;
+  movementId: string;
+}
+export interface Goal {
+  id: string;
+  name: string;
+  targetCents: number;
+  savedCents: number;
+  targetDate: string | null;
+}
+export interface BalanceCheck {
+  id: string;
+  periodId: string;
+  date: string;
+  actualCents: number;
+  calculatedCents: number;
+}
+export interface Forecast {
+  id: string;
+  periodId: string;
+  incomeCents: number;
+  payday: string;
+  savingsCents: number;
+}
+export interface FinanceData {
+  fixed: FixedExpense[];
+  payments: FixedPayment[];
+  goals: Goal[];
+  checks: BalanceCheck[];
+  forecasts: Forecast[];
+}
 export interface Data {
-  schemaVersion: 2;
+  schemaVersion: 3;
+  finance: FinanceData;
   id: string;
   createdAt: string;
   updatedAt: string;
@@ -89,7 +133,8 @@ export interface Backup {
 export function createData(displayName = ""): Data {
   const now = new Date().toISOString();
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    finance: { fixed: [], payments: [], goals: [], checks: [], forecasts: [] },
     id: crypto.randomUUID(),
     createdAt: now,
     updatedAt: now,
@@ -217,7 +262,7 @@ function validateProfile(data: Record<string, unknown>) {
 }
 export function validateData(value: unknown): Data {
   const data = object(value);
-  if (typeof data.schemaVersion === "number" && data.schemaVersion > 2)
+  if (typeof data.schemaVersion === "number" && data.schemaVersion > 3)
     throw new Error("Este respaldo necesita una versión más nueva de Field.");
   keys(data, [
     "schemaVersion",
@@ -233,8 +278,9 @@ export function validateData(value: unknown): Data {
     "recipes",
     "purchases",
     "preparations",
+    "finance",
   ]);
-  if (data.schemaVersion !== 2) throw new Error("La versión no es válida.");
+  if (data.schemaVersion !== 3) throw new Error("La versión no es válida.");
   validateProfile(data);
   const periods = collection(
     data.periods,
@@ -402,6 +448,117 @@ export function validateData(value: unknown): Data {
       cents(o.costPerPortionCents);
     },
   );
+  const finance = object(data.finance);
+  keys(finance, ["fixed", "payments", "goals", "checks", "forecasts"]);
+  collection(
+    finance.fixed,
+    ["id", "name", "cents", "category", "day", "start", "end"],
+    (o) => {
+      named(o);
+      cents(o.cents);
+      text(o.category, 60);
+      if (
+        !o.cents ||
+        !Number.isInteger(o.day) ||
+        Number(o.day) < 1 ||
+        Number(o.day) > 31 ||
+        !civilDate(o.start) ||
+        (o.end !== null && (!civilDate(o.end) || o.end < o.start))
+      )
+        throw new Error("Revisá monto, día y vigencia del gasto fijo.");
+    },
+  );
+  const paymentMovements = new Set(),
+    occurrences = new Set();
+  collection(
+    finance.payments,
+    ["id", "fixedId", "dueDate", "movementId"],
+    (o) => {
+      id(o.fixedId);
+      id(o.movementId);
+      const m = movements.find((m) => m.id === o.movementId),
+        p = periods.find((p) => p.id === m?.periodId);
+      const occurrence = `${o.fixedId}/${o.dueDate}`;
+      if (
+        !civilDate(o.dueDate) ||
+        !m ||
+        m.type !== "expense" ||
+        m.purchaseId !== null ||
+        !p ||
+        o.dueDate < String(p.start) ||
+        o.dueDate >= String(p.payday) ||
+        paymentMovements.has(o.movementId) ||
+        occurrences.has(occurrence)
+      )
+        throw new Error(
+          "Cada vencimiento fijo debe tener un único gasto válido en su período.",
+        );
+      paymentMovements.add(o.movementId);
+      occurrences.add(occurrence);
+    },
+  );
+  collection(
+    finance.goals,
+    ["id", "name", "targetCents", "savedCents", "targetDate"],
+    (o) => {
+      named(o);
+      cents(o.targetCents);
+      cents(o.savedCents);
+      if (!o.targetCents || (o.targetDate !== null && !civilDate(o.targetDate)))
+        throw new Error("Revisá el objetivo y la fecha de la meta.");
+    },
+  );
+  collection(
+    finance.checks,
+    ["id", "periodId", "date", "actualCents", "calculatedCents"],
+    (o) => {
+      const p = periods.find((p) => p.id === o.periodId);
+      if (
+        !p ||
+        !civilDate(o.date) ||
+        o.date < String(p.start) ||
+        o.date >= String(p.payday)
+      )
+        throw new Error("La comprobación debe estar dentro del período.");
+      for (const k of ["actualCents", "calculatedCents"]) {
+        if (
+          !Number.isSafeInteger(o[k]) ||
+          Math.abs(Number(o[k])) > Number.MAX_SAFE_INTEGER / 4
+        )
+          throw new Error("Saldo inválido.");
+      }
+    },
+  );
+  const forecastPeriods = new Set();
+  collection(
+    finance.forecasts,
+    ["id", "periodId", "incomeCents", "payday", "savingsCents"],
+    (o) => {
+      const p = periods.find((p) => p.id === o.periodId);
+      cents(o.incomeCents);
+      cents(o.savingsCents);
+      if (
+        !p ||
+        !civilDate(o.payday) ||
+        o.payday <= String(p.payday) ||
+        daysBetween(String(p.payday), o.payday) > 1096 ||
+        forecastPeriods.has(o.periodId)
+      )
+        throw new Error("Revisá las fechas de la proyección.");
+      forecastPeriods.add(o.periodId);
+    },
+  );
+  const totalFixed = (finance.fixed as FixedExpense[]).reduce(
+    (sum, f) => sum + f.cents * 37,
+    0,
+  );
+  if (
+    !Number.isSafeInteger(totalFixed) ||
+    totalFixed > Number.MAX_SAFE_INTEGER / 4 ||
+    movements.reduce((sum, m) => sum + Number(m.cents), 0) >
+      Number.MAX_SAFE_INTEGER / 4
+  )
+    throw new Error("Los importes acumulados superan el límite seguro.");
   return structuredClone(data) as unknown as Data;
 }
 export function migrateData(value: unknown): Data {
@@ -428,6 +585,34 @@ export function migrateData(value: unknown): Data {
       },
     });
   }
+  if (data.schemaVersion === 2) {
+    keys(data, [
+      "schemaVersion",
+      "id",
+      "createdAt",
+      "updatedAt",
+      "profile",
+      "settings",
+      "periods",
+      "activePeriodId",
+      "movements",
+      "ingredients",
+      "recipes",
+      "purchases",
+      "preparations",
+    ]);
+    return validateData({
+      ...data,
+      schemaVersion: 3,
+      finance: {
+        fixed: [],
+        payments: [],
+        goals: [],
+        checks: [],
+        forecasts: [],
+      },
+    });
+  }
   if (data.schemaVersion !== 1) return validateData(data);
   keys(data, [
     "schemaVersion",
@@ -438,7 +623,7 @@ export function migrateData(value: unknown): Data {
     "settings",
   ]);
   validateProfile(data);
-  return validateData({
+  return migrateData({
     ...data,
     schemaVersion: 2,
     periods: [],

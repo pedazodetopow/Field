@@ -1,6 +1,6 @@
 # Sistema Personal: análisis y plan inicial (histórico)
 
-Estado actual: el pedido de rediseño integral autorizó la implementación funcional de finanzas y cocina y reemplaza el límite anterior de etapa 1. Lo entregado se describe en VERSION_FUNCIONAL.md; resultados en VALIDACION.md. El contenido siguiente conserva el análisis y las decisiones del plan original, como historial, y no limita el alcance autorizado actual.
+Estado actual: foco exclusivo autorizado en Inicio, Finanzas y experiencia visual. Cocina, ejercicio y hábitos pausados. La nueva entrega y sus reglas se describen en README.md, SKILLS.md y VALIDACION.md. Lo que sigue es el plan histórico; no sustituye las instrucciones vigentes de AGENTS.md.
 
 ## 1. Repositorio actual
 

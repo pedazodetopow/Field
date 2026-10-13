@@ -93,20 +93,20 @@ test("presupuesto, ingresos, gastos, edición, eliminación, búsqueda y semanas
 }) => {
   await page.goto("");
   await period(page);
-  await expect(metric(page, "Saldo real")).toContainText("$ 40.000");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 40.000");
   await expect(metric(page, "Disponible")).toContainText("$ 28.000");
   await expect(page.locator(".week")).toHaveCount(2);
   await expense(page);
-  await expect(metric(page, "Saldo real")).toContainText("$ 39.650");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 39.650");
   await expect(metric(page, "Disponible")).toContainText("$ 27.650");
   await expense(page, "income", "1000", "Ingreso ficticio");
-  await expect(metric(page, "Saldo real")).toContainText("$ 40.650");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 40.650");
   await page
     .getByRole("button", { name: "Editar Prueba ficticia", exact: true })
     .click();
   await dialog(page).getByLabel(/Monto/).fill("700");
   await save(page);
-  await expect(metric(page, "Saldo real")).toContainText("$ 40.300");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 40.300");
   await page.getByLabel("Buscar", { exact: true }).fill("Ingreso");
   await expect(page.locator("#movement-list .movement")).toHaveCount(1);
   await page.getByLabel("Buscar", { exact: true }).fill("");
@@ -121,12 +121,12 @@ test("presupuesto, ingresos, gastos, edición, eliminación, búsqueda y semanas
   await page
     .getByRole("button", { name: "Eliminar Prueba ficticia", exact: true })
     .click();
-  await expect(metric(page, "Saldo real")).toContainText("$ 41.000");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 41.000");
   await page.reload();
   await expect(metric(page, "Disponible")).toContainText("$ 29.000");
   await nav(page, "Inicio");
-  await expect(page.locator(".available-block")).toContainText("$ 29.000");
-  await expect(page.locator(".payday-block>strong")).toHaveText("14");
+  await expect(page.locator(".receipt-total")).toContainText("$ 29.000");
+  await expect(page.locator(".countdown>b")).toHaveText("14");
 });
 
 test("ingredientes y receta verificables, edición y eliminación sin generar gastos", async ({
@@ -143,7 +143,7 @@ test("ingredientes y receta verificables, edición y eliminación sin generar ga
   await expect(card.locator(".cost-line")).toContainText("$ 140");
   await nav(page, "Finanzas");
   await expect(page.locator("#movement-list .movement")).toHaveCount(0);
-  await expect(metric(page, "Saldo real")).toContainText("$ 40.000");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 40.000");
   await nav(page, "Cocina");
   await page.getByRole("link", { name: "Ingredientes", exact: true }).click();
   await page.getByRole("button", { name: "Editar Pollo", exact: true }).click();
@@ -194,7 +194,7 @@ test("compra vinculada genera un solo gasto, editar lo reemplaza y borrar revier
   await expect(page.locator(".purchase-row")).toHaveCount(1);
   await nav(page, "Finanzas");
   await expect(page.locator("#movement-list .movement")).toHaveCount(1);
-  await expect(metric(page, "Saldo real")).toContainText("$ 39.650");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 39.650");
   await page
     .getByRole("button", {
       name: "Editar Compra de pollo ficticia",
@@ -205,7 +205,7 @@ test("compra vinculada genera un solo gasto, editar lo reemplaza y borrar revier
   await dialog(page).getByLabel("Precio pagado ($)").fill("700");
   await save(page);
   await expect(page.locator("#movement-list .movement")).toHaveCount(1);
-  await expect(metric(page, "Saldo real")).toContainText("$ 39.300");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 39.300");
   await nav(page, "Cocina");
   await expect(page.locator(".recipe-price")).toContainText("$ 35");
   await page.getByRole("link", { name: "Compras", exact: true }).click();
@@ -219,7 +219,7 @@ test("compra vinculada genera un solo gasto, editar lo reemplaza y borrar revier
   await expect(page.locator(".purchase-row")).toHaveCount(0);
   await nav(page, "Finanzas");
   await expect(page.locator("#movement-list .movement")).toHaveCount(0);
-  await expect(metric(page, "Saldo real")).toContainText("$ 40.000");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 40.000");
 });
 
 test("preparaciones, consumo, edición, eliminación e historial de costo", async ({
@@ -255,13 +255,13 @@ test("preparaciones, consumo, edición, eliminación e historial de costo", asyn
     .getByRole("button", { name: "Eliminar Pollo al horno", exact: true })
     .click();
   await nav(page, "Inicio");
-  await expect(page.locator(".prep-row")).toContainText("Pollo al horno");
-  await expect(metric(page, "Porciones disponibles")).toHaveCount(0);
+  await expect(page.locator(".prep-row")).toHaveCount(0); // Inicio ahora es exclusivamente financiero.
   await page
     .getByRole("navigation", { name: "Navegación principal" })
     .getByRole("link", { name: "Cocina", exact: true })
     .click();
   await page.getByRole("link", { name: "Preparaciones", exact: true }).click();
+  await expect(page.locator(".prep-row")).toContainText("Pollo al horno");
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Eliminar", exact: true }).click();
   await expect(page.locator(".prep-row")).toHaveCount(0);
@@ -325,7 +325,7 @@ test("respaldo completo, confirmación, cancelación, restauración y copia prev
   );
   await nav(page, "Finanzas");
   await expect(page.locator("#movement-list .movement")).toHaveCount(2);
-  await expect(metric(page, "Saldo real")).toContainText("$ 39.350");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 39.350");
   await nav(page, "Cocina");
   await expect(page.locator(".recipe-card")).toHaveCount(1);
   await page.getByRole("link", { name: "Preparaciones", exact: true }).click();
@@ -356,10 +356,10 @@ test("demo completa, físicamente separada, y tema claro/oscuro/sistema persiste
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await nav(page, "Inicio");
   await expect(page.locator(".movement")).not.toHaveCount(0);
-  await expect(page.locator(".prep-row")).not.toHaveCount(0);
+  await expect(page.locator(".fixed-row")).not.toHaveCount(0);
   await page.getByRole("button", { name: "Volver a mis datos" }).click();
   await expect(page.locator(".demo-banner")).toHaveCount(0);
-  await expect(page.locator(".available-block")).toContainText("$ 9.000");
+  await expect(page.locator(".receipt-total")).toContainText("$ 9.000");
   await nav(page, "Ajustes y respaldos");
   await expect(page.getByLabel("¿Cómo querés que te llamemos?")).toHaveValue(
     "Personal ficticio",
@@ -399,7 +399,7 @@ test("rechaza unidades incompatibles y respaldos inválidos sin modificar el est
         formatVersion: 1,
         space: "personal",
         exportedAt: new Date().toISOString(),
-        data: { schemaVersion: 3 },
+        data: { schemaVersion: 4 },
       }),
       "más nueva",
     ],
@@ -433,7 +433,7 @@ test("migra datos de la versión publicada y conserva una copia previa", async (
   page,
 }) => {
   await page.goto("");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Resumen");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tu dinero, hoy");
   await page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve) => {
       const req = indexedDB.open("field-personal", 1);
@@ -549,10 +549,10 @@ test("nuevo período conserva movimientos previos y permite volver al historial"
     .getByLabel("Próximo cobro", { exact: true })
     .fill(addDays(date, 20));
   await save(page);
-  await expect(metric(page, "Saldo real")).toContainText("$ 20.000");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 20.000");
   await expect(page.locator("#movement-list .movement")).toHaveCount(0);
   await page.locator(".history .button").first().click();
-  await expect(metric(page, "Saldo real")).toContainText("$ 39.500");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 39.500");
   await expect(page.locator("#movement-list")).toContainText(
     "Histórico ficticio",
   );
@@ -621,5 +621,5 @@ test("receta y compra con varias líneas, quitar una línea y vínculo financier
   await save(page);
   await nav(page, "Finanzas");
   await expect(page.locator("#movement-list .movement")).toHaveCount(1);
-  await expect(metric(page, "Saldo real")).toContainText("$ 39.550");
+  await expect(metric(page, "Saldo calculado")).toContainText("$ 39.550");
 });

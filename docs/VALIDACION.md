@@ -1,5 +1,19 @@
 # Validación de Field
 
+## Finanzas y experiencia visual — 13 de octubre de 2026
+
+- `npm run build`: TypeScript estricto y Vite completados bajo `/Field/`.
+- `npm test`: **53 pruebas** pasaron. Fijos en meses cortos/bisiestos, múltiples vencimientos, pago único, edición/eliminación y vuelta a pendiente, reserva sin doble gasto, gasto diario, negativos, ahorro porcentual, metas sin gasto, proyecciones y respaldos v3; se conservan pruebas de cuotas, concurrencia y atomicidad.
+- `FIELD_CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e -- --project=chromium-mobile --project=chromium-desktop --workers=2`: **38 pruebas** pasaron. Incluyen todos los flujos anteriores de Cocina como regresión, sin ampliar ese módulo.
+- Migración 2→3 en IndexedDB real: movimientos, compras, recetas y preparaciones idénticos al respaldo v2, nueva colección financiera vacía y copia anterior conservada. Demo físicamente separada. Deshacer no pisa una escritura de otra pestaña.
+- `scripts/capture-finance.mjs`: **32 capturas** (seis pantallas × dos tamaños × dos temas, más cuatro portadas y cuatro formularios), con datos ficticios aislados. Verifica identidad de página, contenido, consola sin errores y ausencia de desplazamiento horizontal.
+- Revisión visual por imágenes de Inicio, presupuesto, fijos, movimientos, metas, proyección y formulario: tipografía, jerarquía de importes, navegación, claros/oscuros y distribución. Se comparó con el render local de Proyecto Ahorros (390/1440), sin copiar código ni simular acceso a su publicación.
+- Problemas corregidos: el formulario rápido quedaba después del recibo en móvil (ahora va inmediatamente después del disponible de hoy); etiquetas largas y campos de fecha desbordaban el formulario fijo de iPhone emulado (ahora una columna); pruebas de deshacer aguardaban una operación asíncrona de forma insuficiente (ahora verifican confirmación antes de recargar).
+- Evidencia local: `/workspace/artifacts/field-finanzas/`; comando reproducible y artefacto de Actions `capturas-finanzas`. La suite detecta overlays de Vite, contenido vacío, errores de consola y overflow de diálogos.
+- El plugin Browser no está disponible. Se aplicó el fallback oficial de `frontend-testing-debugging`: Playwright existente; no se instaló otro navegador ni se desactivó el sandbox. Procedencia y compatibilidad de skills en SKILLS.md.
+- Límite: no hay prueba en iPhone físico. WebKit se verifica en Actions con sus dependencias oficiales antes de desplegar. La publicación de esta entrega se registra debajo cuando finalicen CI y deploy.
+
+
 ## Rediseño funcional — 13 de octubre de 2026
 
 - TypeScript estricto y build de producción: completados.

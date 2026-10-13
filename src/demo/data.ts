@@ -163,5 +163,50 @@ export function createDemo() {
         .perPortion,
     },
   ];
+  data.finance.fixed = [
+    {
+      id: "demo-internet",
+      name: "Internet · ejemplo",
+      cents: 165000,
+      category: "Servicios",
+      day: Number(addDays(date, 3).slice(8)),
+      start: date,
+      end: null,
+    },
+    {
+      id: "demo-alquiler",
+      name: "Alquiler · ejemplo",
+      cents: 750000,
+      category: "Vivienda",
+      day: Number(addDays(date, 8).slice(8)),
+      start: date,
+      end: null,
+    },
+  ];
+  data.finance.goals = [
+    {
+      id: "demo-fondo",
+      name: "Fondo de emergencia",
+      targetCents: 9000000,
+      savedCents: 3600000,
+      targetDate: addDays(date, 180),
+    },
+    {
+      id: "demo-viaje",
+      name: "Vacaciones",
+      targetCents: 4500000,
+      savedCents: 1200000,
+      targetDate: addDays(date, 120),
+    },
+  ];
+  data.finance.forecasts = [
+    {
+      id: "demo-proyeccion",
+      periodId,
+      incomeCents: 4500000,
+      payday: addDays(date, 48),
+      savingsCents: 1200000,
+    },
+  ];
   return data;
 }

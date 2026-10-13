@@ -1,3 +1,7 @@
+# Estado vigente
+
+El rediseño financiero posterior reemplaza Inicio y Finanzas, agrega fijos, metas, conciliación y proyección. Cocina se conserva y su desarrollo está pausado. Consultar README.md, SKILLS.md y VALIDACION.md para el estado actual. El informe siguiente conserva la entrega anterior como historial.
+
 # Rediseño y versión funcional
 
 ## Entregado
