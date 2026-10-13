@@ -69,3 +69,9 @@ GitHub Actions ejecutó correctamente instalación con lockfile, las pruebas uni
 En una ejecución anterior WebKit detectó que el tema del sistema no actualizaba al volver a claro. Se conservó una referencia estable a MediaQueryList en la aplicación y la misma prueba pasó en la ejecución siguiente; no se omitieron ni relajaron verificaciones. El instalador y WebKit funcionan en Actions aunque falten bibliotecas locales. La prueba en iPhone físico sigue pendiente.
 
 El repositorio público no activa Pages automáticamente. La API de activación rechazó la integración con 403; falta seleccionar GitHub Actions como fuente de Pages y volver a ejecutar el workflow. Ver PUBLICACION.md.
+
+## Publicación pública confirmada
+
+Después de que el usuario seleccionó GitHub Actions como fuente de Pages, se relanzó la ejecución 38442744314. Los jobs validate y deploy terminaron en success. GitHub devolvió https://pedazodetopow.github.io/Field/; se comprobó respuesta HTTP 200, TLS válido y coincidencia SHA-256 del ícono, CSS y JS públicos con dist. No se inventó la URL ni se desactivó la validación de certificados.
+
+El navegador automatizado de Cloud rechazó el certificado del proxy, de modo que esa comprobación dinámica pública no se completó. Las pruebas de interfaz completas pasaron en Actions y los recursos públicos corresponden al build probado. Safari en un iPhone físico aún no fue probado.

@@ -1,5 +1,7 @@
 # Field · Sistema personal
 
+**Aplicación publicada:** [Abrir Field](https://pedazodetopow.github.io/Field/) — enlace comprobado tras completar el despliegue en GitHub Pages.
+
 Aplicación personal en español rioplatense para Uruguay. Primera etapa: base responsive, navegación, perfil mínimo, temas, IndexedDB y respaldos. Sin backend, cuentas ni sincronización.
 
 Finanzas y alimentación son los módulos prioritarios siguientes. Sus páginas actuales explican el alcance pendiente; todavía no registran gastos, compras ni recetas. Actividad, hábitos y PWA offline quedan para después. Ver [plan](docs/PLAN.md), [reglas](AGENTS.md) y [resultados de validación](docs/VALIDACION.md).
@@ -32,7 +34,7 @@ El build está preparado para el repositorio `pedazodetopow/Field`, con base `/F
 4. Si activaste Pages después de subir el código, ejecutá **Actions → Validar y publicar Field → Run workflow** en `main`.
 5. Usá la URL que devuelve el job **Publicar**. No se considera publicada hasta que el despliegue termine y la URL devuelta responda correctamente.
 
-En el iPhone, abrí esa URL HTTPS en Safari. El código y el workflow ya se incorporaron a `main` mediante un push de avance directo, sin forzar el historial. La suite completa de navegador pasó en GitHub Actions. La publicación espera la activación manual de Pages; la integración de Codex no tiene permiso para habilitarlo. Ver [estado de publicación y acción manual pendiente](docs/PUBLICACION.md).
+En el iPhone, abrí esa URL HTTPS en Safari. El código y el workflow ya se incorporaron a `main` mediante un push de avance directo, sin forzar el historial. La suite completa de navegador pasó en GitHub Actions. Pages está activado y el despliegue se completó. Se comprobó HTTPS, respuesta 200 y coincidencia de los recursos públicos con el build validado. Ver [estado de publicación y acción manual pendiente](docs/PUBLICACION.md).
 
 Si cambiás el nombre del repositorio o publicás bajo otro path, ajustá `base` en `vite.config.ts`. Mantener el mismo origen público conserva el acceso a los datos locales; cambiar de dominio requiere trasladarlos con un respaldo.
 

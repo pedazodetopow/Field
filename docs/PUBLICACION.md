@@ -9,11 +9,17 @@
 - El workflow `.github/workflows/pages.yml` valida en push a `main`, instala las dependencias de los navegadores, construye `dist`, carga el artefacto, verifica la configuración de Pages y lo publica. En PR valida sin desplegar.
 - No se agregaron nuevas funcionalidades para la publicación.
 
-No se ha confirmado una URL pública funcionando. El repositorio ya es público y la API de GitHub permite consultar Actions. Pages todavía no existe (GET devuelve 404). El intento de activarlo desde Codex fue rechazado con 403 «Resource not accessible by integration». La acción oficial también requiere un token diferente de GITHUB_TOKEN para habilitar Pages automáticamente; no se agregaron secretos ni se solicitó un token nuevo.
+## Publicación confirmada
 
-La ejecución [38442343231](https://github.com/pedazodetopow/Field/actions/runs/38442343231), sobre el commit `1f78070`, confirmó `validate` en verde y `deploy` fallando únicamente en configurar Pages por sitio inexistente. Un fallo anterior de cambio de tema del sistema en WebKit fue corregido conservando una MediaQueryList estable; la misma prueba pasó en la siguiente ejecución.
+El 13 de octubre de 2026 se confirmó la publicación en **https://pedazodetopow.github.io/Field/**. GitHub devolvió esa URL con `build_type: workflow`; los jobs `validate` y `deploy` de la ejecución [38442744314](https://github.com/pedazodetopow/Field/actions/runs/38442744314) finalizaron correctamente sobre el commit `8e09fdc`.
 
-## Acción manual en GitHub
+El usuario seleccionó GitHub Actions como fuente de Pages. Codex relanzó los jobs fallidos y verificó el resultado. La respuesta pública fue HTTP 200 con verificación TLS correcta. El ícono, CSS y JavaScript también respondieron 200 y sus hashes coinciden con el build validado. La suite completa de Chromium y WebKit pasó en Actions; la prueba en un iPhone físico queda a cargo del uso real.
+
+El navegador automatizado de Cloud no confió en el certificado del proxy del entorno. No se desactivó TLS: se verificó la publicación con curl usando el almacén de confianza del sistema y se contrastaron todos los recursos. Ese fallo local de confianza no se describe como una comprobación de interfaz pública en navegador.
+
+No falta ninguna acción manual para abrir la aplicación. Los pasos siguientes se conservan como referencia para futuras publicaciones.
+
+## Referencia para futuras publicaciones
 
 1. Abrí el repositorio **pedazodetopow/Field** → **Settings** → **Pages**.
 2. En **Build and deployment**, seleccioná **GitHub Actions** como **Source**. Si ya está seleccionado, dejalo así. Si no aparece la opción, necesitás permiso de administración en el repositorio; si el repositorio es privado, verificá que tu plan permita Pages o hacelo público si corresponde. No modificar visibilidad automáticamente.
