@@ -1,6 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
+  reporter: process.env.CI
+    ? [["list"], ["json", { outputFile: "test-results/results.json" }]]
+    : "list",
   testDir: "./tests/e2e",
   use: { baseURL: "http://127.0.0.1:4173/Field/" },
   projects: [
