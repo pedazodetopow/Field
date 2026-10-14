@@ -18,12 +18,12 @@ function descargar(txt,nombre,tipo){
 }
 /* En el iPhone abre "Compartir" para guardarlo en Archivos o iCloud; si no se puede, lo descarga. */
 export async function exportar(){
-  var txt=textoRespaldo(),nombre='proyecto-ahorros-'+today()+'.json',file=null;
+  var txt=textoRespaldo(),nombre='field-'+today()+'.json',file=null;
   try{file=new File([txt],nombre,{type:'application/json'})}catch(e){}
   if(file&&navigator.canShare&&navigator.share){
     var puede=false;try{puede=navigator.canShare({files:[file]})}catch(e){}
     if(puede){
-      try{await navigator.share({files:[file],title:'Respaldo de Proyecto Ahorros'});marcarExport();toast('Respaldo listo');return}
+      try{await navigator.share({files:[file],title:'Respaldo de Field'});marcarExport();toast('Respaldo listo');return}
       catch(e){if(e&&e.name==='AbortError')return}
     }
   }
@@ -57,7 +57,7 @@ function copiar(){
 export function montarImportador(el,onConfirmar,textoBoton){
   el.innerHTML='<div class="stack imp">'
     +'<div class="row-btns"><label class="btn primary filebtn">Elegir archivo de respaldo<input type="file" class="sr-only" accept=".json,application/json,text/plain"></label></div>'
-    +'<div class="field"><label class="sub-l" for="'+el.id+'-txt">O pegá el texto que copiaste</label><textarea id="'+el.id+'-txt" spellcheck="false" autocomplete="off" placeholder="{&quot;app&quot;:&quot;proyecto-ahorros&quot;, …}"></textarea></div>'
+    +'<div class="field"><label class="sub-l" for="'+el.id+'-txt">O pegá el texto que copiaste</label><textarea id="'+el.id+'-txt" spellcheck="false" autocomplete="off" placeholder="Pegá aquí el contenido del respaldo…"></textarea></div>'
     +'<div class="row-btns"><button class="btn" type="button" data-imp="revisar">Revisar el texto</button></div>'
     +'<p class="err" role="alert" hidden></p>'
     +'<div class="imp-ok callout tone-mint" hidden></div></div>';

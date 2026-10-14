@@ -1,5 +1,5 @@
 {
-  "name": "proyecto-ahorros",
+  "name": "field",
   "private": true,
   "type": "module",
   "scripts": { "test": "node --test" }

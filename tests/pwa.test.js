@@ -30,8 +30,8 @@ test('el service worker guarda todos los archivos de la app',function(){
 
 test('el manifest tiene lo que pide iOS y Android',function(){
   var m=JSON.parse(fs.readFileSync(path.join(raiz,'manifest.webmanifest'),'utf8'));
-  assert.equal(m.name,'Proyecto Ahorros');
-  assert.equal(m.short_name,'Ahorros');
+  assert.equal(m.name,'Field');
+  assert.equal(m.short_name,'Field');
   assert.equal(m.display,'standalone');
   assert.ok(m.icons.some(function(i){return i.purpose==='maskable'}));
   m.icons.forEach(function(i){assert.ok(fs.existsSync(path.join(raiz,i.src)),i.src)});

@@ -156,7 +156,7 @@ export function leerRespaldo(texto){
   if(!o||typeof o!=='object'||Array.isArray(o))return {ok:false,error:'No es un respaldo válido.'};
   var datos=o,exportado=null;
   if(o.app!==undefined||o.datos!==undefined){
-    if(o.app!=='proyecto-ahorros')return {ok:false,error:'Este archivo no es de Proyecto Ahorros.'};
+    if(o.app!=='proyecto-ahorros')return {ok:false,error:'Este archivo no es compatible con Field.'};
     datos=o.datos;exportado=o.exportado||null;
   }
   if(!datos||typeof datos!=='object'||!CLAVES.some(function(k){return k in datos}))return {ok:false,error:'El respaldo no tiene datos de la app.'};

@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Proyecto Ahorros",
-  "short_name": "Ahorros",
+  "name": "Field",
+  "short_name": "Field",
   "description": "Tu plan hasta el próximo sueldo: cuánto guardar, cuánto gastar por día y cuánto vas a cobrar.",
   "lang": "es-UY",
   "dir": "ltr",
