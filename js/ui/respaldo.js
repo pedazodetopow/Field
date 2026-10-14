@@ -110,7 +110,8 @@ export function renderAjustes(estadoGuardado){
   var p=ctx.state.plan;$('#csv-periodo').textContent='Gastos del '+fCorta(p.inicio)+' al '+fCorta(p.cobro);
   var m=ctx.state.meta,d=diasSinRespaldo(ctx.state,today());
   $('#aj-export-note').innerHTML=m.ultimoExport?'Último respaldo: <b>'+esc(fCorta(m.ultimoExport))+'</b>'+(d>0?' (hace '+d+' '+(d===1?'día':'días')+')':' (hoy)')+'.':'Todavía no exportaste ningún respaldo.';
-  var info=row('Versión de la app',esc(VERSION))
+  var info=row('Aplicación','Field · Finanzas personales')
+    +row('Versión de la app',esc(VERSION))
     +row('Tus datos',esc(resumenDatos(ctx.state)))
     +row('Dónde se guardan',estadoGuardado&&estadoGuardado.donde==='ls'?'en este navegador (modo simple)':'en este dispositivo')
     +row('Protegidos contra borrado',estadoGuardado&&estadoGuardado.persistente?'sí':'no confirmado','',estadoGuardado&&estadoGuardado.persistente?'':'iOS puede borrar datos de webs que no usás hace semanas. Instalada en la pantalla de inicio y abriéndola seguido, no pasa.');
@@ -122,7 +123,7 @@ function temaActual(){try{return localStorage.getItem(TEMA)||'oscuro'}catch(e){r
 export function aplicarTema(t){
   var html=document.documentElement,oscuro=t==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:t!=='claro';
   if(t==='auto')html.removeAttribute('data-theme');else html.setAttribute('data-theme',oscuro?'dark':'light');
-  var m=document.getElementById('meta-tema');if(m)m.setAttribute('content',oscuro?'#14131C':'#1A72B5');
+  var m=document.getElementById('meta-tema');if(m)m.setAttribute('content','#142C40');
   document.querySelectorAll('[data-tema]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-tema')===t))});
 }
 /* ---------- Copias automáticas ---------- */

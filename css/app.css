@@ -1,8 +1,8 @@
 /* Concepto: una alcancía con cajones de color. Celeste = el plan, sol = lo que guardás, verde = lo que te queda
    en la semana, violeta = el sueldo, coral = en qué se va la plata. Cada pestaña lleva su color de punta a punta. */
 :root{
-  --bg:#EEF3F8; --surface:#FFFFFF; --surface-2:#F5F8FB; --ink:#13202B; --muted:#5A6A78; --line:#DAE3EB;
-  --sky:#1A72B5; --sky-soft:#E0EEF9; --sky-ink:#0E4E7D;
+  --bg:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF1F4; --ink:#1A3041; --muted:#637787; --line:#DCE4EA;
+  --sky:#126D64; --sky-soft:#E7F3EF; --sky-ink:#0C544E;
   --sun:#E39B00; --sun-soft:#FFF1C9; --sun-ink:#7A5100;
   --mint:#0B815D; --mint-soft:#DBF3E8; --mint-ink:#0A5C43;
   --grape:#6E45CC; --grape-soft:#ECE5FB; --grape-ink:#4A2D92;
@@ -10,15 +10,15 @@
   --slate:#566C80; --slate-soft:#E5ECF2; --slate-ink:#33475A;
   --teal:#0B7C85; --teal-soft:#DAF1F2; --teal-ink:#085A61; --pink:#C23F82;
   --bad:#C9302C; --bad-soft:#FCE2E2;
-  --hero:#1A72B5; --hero-chip:rgba(255,255,255,.15); --on-color:#FFFFFF;
+  --hero:#142C40; --hero-chip:rgba(255,255,255,.12); --on-color:#F4F8FC;
   --on-accent:#FFFFFF; --on-sun:#231800;
   --f-display:'Bricolage Grotesque','Avenir Next','Segoe UI',system-ui,sans-serif;
   --f-body:'Figtree',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#14131C; --surface:#1D1C28; --surface-2:#262535; --ink:#EEEBF6; --muted:#A39FB7; --line:#312F40;
-    --sky:#9AA8FF; --sky-soft:#262A4A; --sky-ink:#C7CEFF;
+    --bg:#121B23; --surface:#1B2934; --surface-2:#253541; --ink:#EDF3F7; --muted:#9DAEBA; --line:#344651;
+    --sky:#79D5B9; --sky-soft:#244238; --sky-ink:#BCEBD9;
     --sun:#F2C46B; --sun-soft:#3A3122; --sun-ink:#F8DDA6;
     --mint:#7FD8B2; --mint-soft:#1E3A33; --mint-ink:#B5EBD3;
     --grape:#C4A7FF; --grape-soft:#33294D; --grape-ink:#E0D2FF;
@@ -26,14 +26,14 @@
     --slate:#A9B1C9; --slate-soft:#2A2C3C; --slate-ink:#D5DAEA;
     --teal:#77CFE0; --teal-soft:#1E3640; --teal-ink:#B6E7F0; --pink:#F59BC6;
     --bad:#FF7392; --bad-soft:#43212D;
-    --hero:#2A2547; --hero-chip:rgba(255,255,255,.08); --on-color:#F3F0FF;
-    --on-accent:#16141F; --on-sun:#241A05;
+    --hero:#142C40; --hero-chip:rgba(255,255,255,.08); --on-color:#F4F8FC;
+    --on-accent:#12211D; --on-sun:#241A05;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#14131C; --surface:#1D1C28; --surface-2:#262535; --ink:#EEEBF6; --muted:#A39FB7; --line:#312F40;
-  --sky:#9AA8FF; --sky-soft:#262A4A; --sky-ink:#C7CEFF;
+  --bg:#121B23; --surface:#1B2934; --surface-2:#253541; --ink:#EDF3F7; --muted:#9DAEBA; --line:#344651;
+  --sky:#79D5B9; --sky-soft:#244238; --sky-ink:#BCEBD9;
   --sun:#F2C46B; --sun-soft:#3A3122; --sun-ink:#F8DDA6;
   --mint:#7FD8B2; --mint-soft:#1E3A33; --mint-ink:#B5EBD3;
   --grape:#C4A7FF; --grape-soft:#33294D; --grape-ink:#E0D2FF;
@@ -41,8 +41,8 @@
   --slate:#A9B1C9; --slate-soft:#2A2C3C; --slate-ink:#D5DAEA;
   --teal:#77CFE0; --teal-soft:#1E3640; --teal-ink:#B6E7F0; --pink:#F59BC6;
   --bad:#FF7392; --bad-soft:#43212D;
-  --hero:#2A2547; --hero-chip:rgba(255,255,255,.08); --on-color:#F3F0FF;
-  --on-accent:#16141F; --on-sun:#241A05;
+  --hero:#142C40; --hero-chip:rgba(255,255,255,.08); --on-color:#F4F8FC;
+  --on-accent:#12211D; --on-sun:#241A05;
   color-scheme:dark;
 }
 
@@ -75,6 +75,10 @@ main{scroll-margin-top:96px}
 /* Portada */
 .hero{background:var(--hero);color:var(--on-color);border-radius:24px;padding:22px 22px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 20px;align-items:center}
 .hero-hi{font:700 15px var(--f-body);opacity:.92;margin-bottom:6px}
+.field-brand,.welcome-brand{display:inline-flex;align-items:center;gap:7px;font:800 21px/1 var(--f-display);letter-spacing:-.04em}
+.field-mark{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--mint);color:#102821;font:800 19px/1 var(--f-display);letter-spacing:-.06em}
+.hero-top .field-brand{color:var(--on-color);flex:none}
+.hero-top .field-mark{box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
 .hero-sub{margin-top:10px;font-size:15.5px;line-height:1.45;opacity:.95;max-width:44ch}
 .cd{width:128px;height:128px;border-radius:50%;background:var(--sun);color:var(--on-sun);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-shadow:0 0 0 8px var(--hero-chip),0 0 0 16px var(--hero-chip)}
 .cd-n{font:800 46px/1 var(--f-display);letter-spacing:-.03em}
@@ -400,7 +404,9 @@ th.r,td.r{text-align:right}
 .welcome-in{max-width:520px;width:100%;text-align:left}
 .welcome-in>.btn{width:100%}
 .welcome-in .card>.btn{width:100%}
-.welcome-sun{width:72px;height:72px;border-radius:50%;background:var(--sun);box-shadow:0 0 0 10px var(--sun-soft)}
+.welcome-brand{font-size:30px;color:var(--ink)}
+.welcome-brand .field-mark{width:44px;height:44px;border-radius:12px;font-size:28px;box-shadow:0 0 0 7px var(--sky-soft)}
+.welcome-kicker{font:800 11px/1.2 var(--f-body);letter-spacing:.16em;color:var(--sky-ink);margin-bottom:-8px}
 .welcome-sub{font-size:16.5px;color:var(--muted);line-height:1.45}
 
 /* ---------- App instalada en el iPhone ---------- */
@@ -581,7 +587,7 @@ html.en-uso .ph-s{display:none}
 :root:not([data-theme="dark"]) .hoy-hero .bar>i{background:var(--on-color)}
 
 /* Modo discreto */
-.hero-top{gap:8px}.hero-top .hero-hi{flex:1}
+.hero-top{gap:8px}.hero-top .hero-hi{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hero-eye .ojo-c{display:none}
 html.discreto .hero-eye .ojo-a{display:none}
 html.discreto .hero-eye .ojo-c{display:inline}
