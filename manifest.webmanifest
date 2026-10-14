@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Proyecto Ahorros",
+  "short_name": "Ahorros",
+  "description": "Tu plan hasta el próximo sueldo: cuánto guardar, cuánto gastar por día y cuánto vas a cobrar.",
+  "lang": "es-UY",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14131C",
+  "theme_color": "#14131C",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
